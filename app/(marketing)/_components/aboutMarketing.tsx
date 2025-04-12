@@ -1,6 +1,5 @@
 import { CardBody, CardContainer, CardItem } from "@/components/ui/3d-card";
 import Image from "next/image";
-import Spline from "@splinetool/react-spline";
 
 const AboutMarketing = () => {
   return (
@@ -46,7 +45,7 @@ const AboutMarketing = () => {
             </CardItem>
             <div className="flex justify-between items-center mt-20 text-neutral-500 text-sm max-w-sm dark:text-neutral-300">
               From scribbles to solutions. Brainstorm, design, and plan from
-              anywhere because great ideas don't wait.
+              anywhere because great ideas don&apos;t wait.
             </div>
           </CardBody>
         </CardContainer>
@@ -64,7 +63,7 @@ const AboutMarketing = () => {
               className="text-neutral-500 text-sm max-w-sm mt-2 dark:text-neutral-300"
             >
               Publish your notes and boards effortlessly to keep your team in
-              the loop. Whether it's a quick sketch or a detailed plan, get
+              the loop. Whether it&apos;s a quick sketch or a detailed plan, get
               feedback faster and stay aligned.
             </CardItem>
             <CardItem

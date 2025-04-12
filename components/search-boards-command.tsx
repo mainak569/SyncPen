@@ -44,7 +44,7 @@ const SearchCommand = () => {
     return () => document.removeEventListener("keydown", down);
   }, [toggle]);
 
-  const onSelect = (value: String) => {
+  const onSelect = (value: string) => {
     const id = value.split("-")[0];
     router.push(`/boards/${id}`);
     onClose();

@@ -13,8 +13,6 @@ const google = createGoogleGenerativeAI({ apiKey });
 
 export const runtime = "edge";
 
-const generateId = () => Math.random().toString(36).slice(2, 15);
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();

@@ -1,12 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import {
-  Excalidraw,
-  MainMenu,
-  WelcomeScreen,
-  convertToExcalidrawElements,
-} from "@excalidraw/excalidraw";
+import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useTheme } from "next-themes";
 import Logo from "@/components/logo";
