@@ -73,19 +73,19 @@
 3. **Configure `.env` file**
    ```env
     # Convex (Real-time Backend)
-    CONVEX_DEPLOYMENT=dev:elegant-dsdjnwlqjdnflqwsd-219
-    NEXT_PUBLIC_CONVEX_URL=https://fjwdnfj-lemming-219.convex.cloud
+    CONVEX_DEPLOYMENT=YOUR_CONVEX_DEPLOYMENT_URL
+    NEXT_PUBLIC_CONVEX_URL=YOUR_NEXT_PUBLIC_CONVEX_URL
     
     # Clerk (Authentication)
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=dsdsdjcwnlfjwlf
-    CLERK_SECRET_KEY=dswfnjkwneflkwmfpklewmlfm
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=YOUR_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    CLERK_SECRET_KEY=YOUR_CLERK_SECRET_KEY
     
     # Edgestore (File Uploads)
-    EDGE_STORE_ACCESS_KEY=dsddsdsdsdfwnfjkwe
-    EDGE_STORE_SECRET_KEY=dsdddsdsdsdsfnewlkfm
+    EDGE_STORE_ACCESS_KEY=YOUR_EDGE_STORE_ACCESS_KEY
+    EDGE_STORE_SECRET_KEY=YOUR_EDGE_STORE_SECRET_KEY
     
     # Google API (if used for integration like Calendar, Docs, etc.)
-    GOOGLE_API_KEY=fdjsnfjkndwiofmwofnwekjnfkw
+    GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY
    ```
 4. **Run the dev server**
    ```bash
