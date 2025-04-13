@@ -103,73 +103,66 @@ type DocumentNode = {
   children?: DocumentNode[];
 };
 
-function isTextNode(node: unknown): node is { type: string; text: string } {
+// Define a text node type explicitly
+type TextNode = {
+  type: "text";
+  text: string;
+};
+
+function isTextNode(node: unknown): node is TextNode {
   return (
     typeof node === "object" &&
     node !== null &&
-    "type" in node &&
-    "text" in node &&
-    (node as any).type === "text"
+    (node as Record<string, unknown>).type === "text" &&
+    typeof (node as Record<string, unknown>).text === "string"
   );
 }
 
 const extractTextFromDocument = (nodes: DocumentNode[]): string => {
-  const traverseNodes = (items: DocumentNode[]): string[] => {
-    return items.flatMap((item) => {
-      const result: string[] = [];
+  const extractedText: string[] = [];
 
+  const traverseNodes = (items: DocumentNode[]) => {
+    items.forEach((item) => {
+      // Handle content array
       if (Array.isArray(item.content)) {
         item.content.forEach((contentItem) => {
-          if (
-            typeof contentItem === "object" &&
-            contentItem !== null &&
-            "type" in contentItem &&
-            "text" in contentItem &&
-            (contentItem as any).type === "text"
-          ) {
-            result.push((contentItem as any).text);
+          if (isTextNode(contentItem)) {
+            extractedText.push(contentItem.text);
           }
         });
       }
 
+      // Recursively process children
       if (Array.isArray(item.children)) {
-        result.push(...traverseNodes(item.children));
+        traverseNodes(item.children);
       }
 
+      // Handle tables
       if (
         item.type === "table" &&
         typeof item.content === "object" &&
         item.content !== null &&
-        "rows" in item.content &&
-        Array.isArray((item.content as any).rows)
+        "rows" in item.content
       ) {
-        const rows = (
-          item.content as { rows: { cells: { content: unknown }[] }[] }
-        ).rows;
-        rows.forEach((row) => {
+        const tableContent = item.content as {
+          rows: { cells: { content: unknown[] }[] }[];
+        };
+
+        tableContent.rows.forEach((row) => {
           row.cells.forEach((cell) => {
-            if (Array.isArray(cell.content)) {
-              cell.content.forEach((cellContent) => {
-                if (
-                  typeof cellContent === "object" &&
-                  cellContent !== null &&
-                  "type" in cellContent &&
-                  "text" in cellContent &&
-                  (cellContent as any).type === "text"
-                ) {
-                  result.push((cellContent as any).text);
-                }
-              });
-            }
+            cell.content.forEach((cellContent) => {
+              if (isTextNode(cellContent)) {
+                extractedText.push(cellContent.text);
+              }
+            });
           });
         });
       }
-
-      return result;
     });
   };
 
-  return traverseNodes(nodes).join(" ");
+  traverseNodes(nodes);
+  return extractedText.join(" ");
 };
 
 // Check if document.content is a string and parse it

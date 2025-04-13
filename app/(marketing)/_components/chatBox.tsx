@@ -144,7 +144,6 @@ export default function ChatBox() {
                           components={{
                             code({
                               inline,
-                              className,
                               children,
                               ...props
                             }: {
