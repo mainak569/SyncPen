@@ -24,7 +24,7 @@ import TrashBox from "./trash-box";
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { toast } from "sonner";
 import { AppearanceToggler } from "@/components/appearences";
@@ -48,20 +48,6 @@ const Navigation = () => {
   const navbarRef = useRef<HTMLDivElement | null>(null);
   const [isResetting, setIsResetting] = useState(false); // Temporarily disables animations while resizing/collapsing
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
-
-  useEffect(() => {
-    if (isMobile) {
-      collapse();
-    } else {
-      resetWidth();
-    }
-  }, [isMobile]);
-
-  useEffect(() => {
-    if (isMobile) {
-      collapse();
-    }
-  }, [pathname, isMobile]);
 
   // Resize
   const handleMouseDown = (
@@ -108,7 +94,7 @@ const Navigation = () => {
     }
   };
 
-  const resetWidth = () => {
+  const resetWidth = useCallback(() => {
     if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(false);
       setIsResetting(true);
@@ -123,9 +109,9 @@ const Navigation = () => {
 
       setTimeout(() => setIsResetting(false), 300); // after 300 milliseconds, isResetting is set back to false
     }
-  };
+  }, [isMobile]);
 
-  const collapse = () => {
+  const collapse = useCallback(() => {
     if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(true);
       setIsResetting(true);
@@ -136,7 +122,7 @@ const Navigation = () => {
 
       setTimeout(() => setIsResetting(false), 300);
     }
-  };
+  }, []);
 
   const handleCreate = () => {
     const promise = create({ title: "Untitled" }).then((boardId) =>
@@ -149,6 +135,20 @@ const Navigation = () => {
       error: "Failed to create a new board.",
     });
   };
+
+  useEffect(() => {
+    if (isMobile) {
+      collapse();
+    } else {
+      resetWidth();
+    }
+  }, [isMobile, collapse, resetWidth]);
+
+  useEffect(() => {
+    if (isMobile) {
+      collapse();
+    }
+  }, [pathname, isMobile, collapse]);
 
   return (
     <>

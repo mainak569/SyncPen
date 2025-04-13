@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ComponentProps } from "react";
 
 import {
   X,
@@ -145,12 +146,13 @@ const ChatBox = ({ pageData }: { pageData: string }) => {
                             remarkPlugins={[remarkGfm]}
                             components={{
                               code({
-                                node,
                                 inline,
                                 className,
                                 children,
                                 ...props
-                              }: any) {
+                              }: ComponentProps<"code"> & {
+                                inline?: boolean;
+                              }) {
                                 return inline ? (
                                   <code
                                     className="bg-gray-200 px-1 rounded text-sm"

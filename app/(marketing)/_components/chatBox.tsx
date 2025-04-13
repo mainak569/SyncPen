@@ -72,21 +72,24 @@ export default function ChatBox() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed bottom-6 right-6 z-500"
           >
-            <Button
-              ref={chatIconRef}
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              size="icon"
+            <div
               className={cn(
                 "rounded-full size-16 p-3 shadow-xl text-white transition-all",
                 "opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
               )}
             >
-              {isChatOpen ? (
-                <MessagesSquare className="size-10 animate-pulse" />
-              ) : (
-                <MessageSquareText className="size-10" />
-              )}
-            </Button>
+              <Button
+                ref={chatIconRef}
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                size="icon"
+              >
+                {isChatOpen ? (
+                  <MessagesSquare className="size-10 animate-pulse" />
+                ) : (
+                  <MessageSquareText className="size-10" />
+                )}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -137,7 +140,6 @@ export default function ChatBox() {
                         style={{ wordBreak: "break-word" }}
                       >
                         <ReactMarkdown
-                          children={message.content}
                           remarkPlugins={[remarkGfm]}
                           components={{
                             code({
@@ -164,7 +166,9 @@ export default function ChatBox() {
                               );
                             },
                           }}
-                        />
+                        >
+                          {message.content}
+                        </ReactMarkdown>
                       </div>
                     </div>
                   ))}

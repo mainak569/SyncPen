@@ -5,6 +5,8 @@ import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useTheme } from "next-themes";
 import Logo from "@/components/logo";
+import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
 interface CanvasProps {
   initialContent?: string;
@@ -19,7 +21,8 @@ const Canvas: React.FC<CanvasProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any | null>(null);
+  const [excalidrawAPI, setExcalidrawAPI] =
+    useState<ExcalidrawImperativeAPI | null>(null);
 
   const parseInitialElements = useCallback(() => {
     try {
@@ -36,7 +39,7 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [initialContent]);
 
   const handleChange = useCallback(
-    (elements: readonly any[]) => {
+    (elements: readonly ExcalidrawElement[]) => {
       if (!editable || !excalidrawAPI) return;
 
       // Get current app state for scroll position preservation

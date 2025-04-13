@@ -49,10 +49,6 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     }
   }, [document?.content]);
 
-  // useEffect(() => {
-  //   console.log("Extracted Document Text:\n", extractedText);
-  // }, [extractedText]);
-
   //////////////////////////////////////////////////////////////
 
   if (document === undefined) {
@@ -97,72 +93,95 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
 
 export default DocumentIdPage;
 
-type AnyNode = {
-  id: string;
-  type: string;
-  props?: Record<string, any>;
-  content?: any;
-  children?: AnyNode[];
-};
-
 //////////////////////////////////////////////////////////////
 
 type DocumentNode = {
   id: string;
   type: string;
-  props?: Record<string, any>;
-  content?: any;
+  props?: Record<string, unknown>;
+  content?: unknown;
   children?: DocumentNode[];
 };
 
-const extractTextFromDocument = (nodes: DocumentNode[]): string => {
-  let extractedText: string[] = [];
+function isTextNode(node: unknown): node is { type: string; text: string } {
+  return (
+    typeof node === "object" &&
+    node !== null &&
+    "type" in node &&
+    "text" in node &&
+    (node as any).type === "text"
+  );
+}
 
-  const traverseNodes = (items: DocumentNode[]) => {
-    items.forEach((item) => {
-      // If "content" exists and is an array
+const extractTextFromDocument = (nodes: DocumentNode[]): string => {
+  const traverseNodes = (items: DocumentNode[]): string[] => {
+    return items.flatMap((item) => {
+      const result: string[] = [];
+
       if (Array.isArray(item.content)) {
         item.content.forEach((contentItem) => {
-          const textNode = contentItem as { type: string; text: string };
-          if (textNode.type === "text" && textNode.text) {
-            extractedText.push(textNode.text);
+          if (
+            typeof contentItem === "object" &&
+            contentItem !== null &&
+            "type" in contentItem &&
+            "text" in contentItem &&
+            (contentItem as any).type === "text"
+          ) {
+            result.push((contentItem as any).text);
           }
         });
       }
 
-      // Recursively process children
       if (Array.isArray(item.children)) {
-        traverseNodes(item.children);
+        result.push(...traverseNodes(item.children));
       }
 
-      // Handle table structures
-      if (item.type === "table" && item.content?.rows) {
-        item.content.rows.forEach((row: any) => {
-          row.cells.forEach((cell: any) => {
+      if (
+        item.type === "table" &&
+        typeof item.content === "object" &&
+        item.content !== null &&
+        "rows" in item.content &&
+        Array.isArray((item.content as any).rows)
+      ) {
+        const rows = (
+          item.content as { rows: { cells: { content: unknown }[] }[] }
+        ).rows;
+        rows.forEach((row) => {
+          row.cells.forEach((cell) => {
             if (Array.isArray(cell.content)) {
-              cell.content.forEach((cellContent: any) => {
-                const textCell = cellContent as { type: string; text: string };
-                if (textCell.type === "text" && textCell.text) {
-                  extractedText.push(textCell.text);
+              cell.content.forEach((cellContent) => {
+                if (
+                  typeof cellContent === "object" &&
+                  cellContent !== null &&
+                  "type" in cellContent &&
+                  "text" in cellContent &&
+                  (cellContent as any).type === "text"
+                ) {
+                  result.push((cellContent as any).text);
                 }
               });
             }
           });
         });
       }
+
+      return result;
     });
   };
 
-  traverseNodes(nodes);
-  return extractedText.join(" ");
+  return traverseNodes(nodes).join(" ");
 };
 
 // Check if document.content is a string and parse it
-const parseDocumentContent = (content: string | any): DocumentNode[] => {
+const parseDocumentContent = (content: unknown): DocumentNode[] => {
   try {
-    return typeof content === "string"
-      ? (JSON.parse(content) as DocumentNode[])
-      : (content as DocumentNode[]);
+    if (typeof content === "string") {
+      return JSON.parse(content) as DocumentNode[];
+    } else if (Array.isArray(content)) {
+      return content as DocumentNode[];
+    } else {
+      return [];
+    }
   } catch (error) {
     console.error("Error parsing document content:", error);
     return [];
