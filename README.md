@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✍️ SyncPen – Where Sync Meets Pen
 
-## Getting Started
+**SyncPen** is a powerful, real-time productivity tool that combines the functionality of a **Notion-style text editor**, an **Excalidraw-like whiteboard**, and an **AI-powered assistant** – all in one place.
 
-First, run the development server:
+> ✅ Plan • ✏️ Draw • 📄 Write • 💬 Ask AI • 🔄 Sync – all in one place.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Live Demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+🌐 [Check out SyncPen Live](https://sync-pen-six.vercel.app/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ✨ Features
 
-To learn more about Next.js, take a look at the following resources:
+### 📝 Document Editor
+- Real-time Notion-style text editor
+- Infinite nested (children) documents
+- Icons and cover images for each document
+- Publish docs to the web
+- Soft delete + Trash bin + Recovery
+- Light and Dark mode toggle
+- Mobile responsive layout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🎨 Whiteboard
+- Excalidraw-inspired infinite canvas
+- 30+ drawing features (shapes, arrows, freehand, etc.)
+- Sync notes and visuals seamlessly
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 🤖 Page-aware Chatbot
+- Ask AI questions about your current document context
+- Smart replies and inline suggestions
 
-## Deploy on Vercel
+### 📁 File Handling
+- Upload, delete, and replace files
+- Attach media directly to documents
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 🌲 UI/UX & Navigation
+- Collapsible and expandable sidebar
+- Smooth animations and transitions
+- Intuitive document hierarchy
+- Fully responsive on mobile, tablet, and desktop
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🛠️ Tech Stack
+
+| Tech            | Purpose                        |
+|-----------------|--------------------------------|
+| **Next.js**     | Frontend framework             |
+| **Convex**      | Real-time backend              |
+| **Edgestore**   | File storage                   |
+| **TailwindCSS** | Styling                        |
+| **ShadCN/UI**   | Component library              |
+| **Clerk**       | Authentication                 |
+| **Gemini**      | AI assistant integration       |
+| **Vercel**      | Hosting & deployment           |
+
+---
+
+## 📦 Getting Started
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/mainak569/SyncPen.git
+   cd SyncPen
+   ```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+3. **Configure `.env` file**
+   ```env
+    # Convex (Real-time Backend)
+    CONVEX_DEPLOYMENT=dev:elegant-dsdjnwlqjdnflqwsd-219
+    NEXT_PUBLIC_CONVEX_URL=https://fjwdnfj-lemming-219.convex.cloud
+    
+    # Clerk (Authentication)
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=dsdsdjcwnlfjwlf
+    CLERK_SECRET_KEY=dswfnjkwneflkwmfpklewmlfm
+    
+    # Edgestore (File Uploads)
+    EDGE_STORE_ACCESS_KEY=dsddsdsdsdfwnfjkwe
+    EDGE_STORE_SECRET_KEY=dsdddsdsdsdsfnewlkfm
+    
+    # Google API (if used for integration like Calendar, Docs, etc.)
+    GOOGLE_API_KEY=fdjsnfjkndwiofmwofnwekjnfkw
+   ```
+4. **Run the dev server**
+   ```bash
+   npm run dev
+   ```
+
+### 🙋‍♂️ About Me
+
+Hi! I’m **Mainak Das** 👋  
+I’m passionate about building tools that empower people to think, plan, and create more effectively.  
+Feel free to connect with me on [LinkedIn](https://www.linkedin.com/in/mainak-das-93b787287/).
