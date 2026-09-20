@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, QueryCtx } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 import { requireOwnership, requireUserId } from "./model/auth";
 // Relative rather than the `@/` alias: Convex bundles this directory with its
@@ -15,6 +15,54 @@ import { collectUploadedFileUrls } from "../lib/uploads";
  * degrade. An explicit cap turns that hard failure into a truncated list.
  */
 const MAX_RESULTS = 500;
+
+/**
+ * Narrows `candidates` to the uploads no note of this user still references.
+ *
+ * The single rule for deleting a file: nothing else points at it. Both callers
+ * need it — the one that removes an image from a note, and the one that
+ * deletes a note outright — and they must agree, because an upload can be
+ * shared. Copying or cutting an image into a second note makes one URL live in
+ * two rows, so "this note owned it" is never sufficient grounds to delete.
+ *
+ * Callers that delete rows must run this *after* the rows are gone, so the
+ * copies being removed don't count as references to themselves.
+ */
+const unreferencedUploads = async (
+  ctx: QueryCtx,
+  userId: string,
+  candidates: Iterable<string>
+): Promise<string[]> => {
+  const unreferenced = new Set(candidates);
+
+  if (unreferenced.size === 0) return [];
+
+  // No isArchived filter on purpose: trashed notes still reference their
+  // uploads, and restoring one must not surface a broken image.
+  const documents = await ctx.db
+    .query("documents")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .take(MAX_RESULTS);
+
+  // A truncated scan cannot prove a URL is unused — the reference could be in
+  // a row that was cut off. Leaking a file is recoverable; deleting one that
+  // is still on a page is not, so bail out rather than guess.
+  if (documents.length >= MAX_RESULTS) return [];
+
+  for (const document of documents) {
+    if (document.coverImage) {
+      unreferenced.delete(document.coverImage);
+    }
+
+    for (const url of collectUploadedFileUrls(document.content)) {
+      unreferenced.delete(url);
+    }
+
+    if (unreferenced.size === 0) break;
+  }
+
+  return [...unreferenced];
+};
 
 export const archive = mutation({
   args: { id: v.id("documents") },
@@ -218,7 +266,14 @@ export const remove = mutation({
 
     await ctx.db.delete(args.id);
 
-    return { fileUrls: [...fileUrls] };
+    // Only the uploads nothing else points at. This used to return everything
+    // the subtree referenced, which destroyed files that were still in use:
+    // copy or cut an image into a second note and the URL lives in two rows,
+    // so deleting the first note took the second note's image with it.
+    //
+    // Runs after the deletes above so the rows being removed no longer count
+    // as references to their own files.
+    return { fileUrls: await unreferencedUploads(ctx, userId, fileUrls) };
   },
 });
 
@@ -238,35 +293,7 @@ export const findUnreferencedFiles = query({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
 
-    if (args.urls.length === 0) return [];
-
-    const unreferenced = new Set(args.urls);
-
-    // No isArchived filter on purpose: trashed notes still reference their
-    // uploads, and restoring one must not surface a broken image.
-    const documents = await ctx.db
-      .query("documents")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .take(MAX_RESULTS);
-
-    // A truncated scan cannot prove a URL is unused — the reference could be
-    // in a row that was cut off. Leaking a file is recoverable; deleting one
-    // that is still on a page is not, so bail out rather than guess.
-    if (documents.length >= MAX_RESULTS) return [];
-
-    for (const document of documents) {
-      if (document.coverImage) {
-        unreferenced.delete(document.coverImage);
-      }
-
-      for (const url of collectUploadedFileUrls(document.content)) {
-        unreferenced.delete(url);
-      }
-
-      if (unreferenced.size === 0) break;
-    }
-
-    return [...unreferenced];
+    return unreferencedUploads(ctx, userId, args.urls);
   },
 });
 
