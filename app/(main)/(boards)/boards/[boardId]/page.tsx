@@ -22,7 +22,7 @@ const BoardIdPage = ({ params }: BoardIdPageProps) => {
   const resolvedParams = use(params); // Unwrap the params Promise
 
   const board = useQuery(api.boards.getById, {
-    boardId: resolvedParams.boardId, // Use the unwrapped params
+    id: resolvedParams.boardId, // Use the unwrapped params
   });
 
   const update = useMutation(api.boards.update);

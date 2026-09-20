@@ -24,14 +24,22 @@ export const CoverNotes = ({ url, preview }: CoverImageProps) => {
   const removeCoverImage = useMutation(api.documents.removeCoverImage);
 
   const onRemove = async () => {
-    if (url) {
-      await edgestore.publicFiles.delete({
-        url: url,
-      });
-    }
-    removeCoverImage({
+    // Drop the reference first. Deleting the file first meant an EdgeStore
+    // error aborted the handler before the mutation ran, leaving the note
+    // pointing at a cover the user had just asked to remove.
+    await removeCoverImage({
       id: params.documentId as Id<"documents">,
     });
+
+    if (url) {
+      try {
+        await edgestore.publicFiles.delete({ url });
+      } catch (error) {
+        // Best-effort: the cover is already gone from the note, and an
+        // orphaned file must not surface as a failed removal.
+        console.error("Failed to delete cover image from storage:", error);
+      }
+    }
   };
 
   return (

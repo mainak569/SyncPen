@@ -12,6 +12,7 @@ import { useCoverImage } from "@/hooks/use-cover-image";
 import { SingleImageDropzone } from "@/components/single-image-dropzone";
 import { api } from "@/convex/_generated/api";
 import { useEdgeStore } from "@/lib/edgestore";
+import { deleteUploadedFiles } from "@/lib/edgestore-cleanup";
 import { Id } from "@/convex/_generated/dataModel";
 
 export const CoverImageNotesModal = () => {
@@ -30,23 +31,41 @@ export const CoverImageNotesModal = () => {
   };
 
   const onChange = async (file?: File) => {
-    if (file) {
-      setIsSubmitting(true);
-      setFile(file);
+    if (!file) return;
 
-      const res = await edgestore.publicFiles.upload({
-        file,
-        options: {
-          replaceTargetUrl: coverImage.url,
-        },
-      });
+    setIsSubmitting(true);
+    setFile(file);
+
+    // The previous cover, when this is a "Change Cover" rather than a first
+    // upload. Captured before the store is reset by onClose().
+    const previousUrl = coverImage.url;
+
+    try {
+      // Deliberately not an EdgeStore replace. A replace overwrites the old
+      // file in place without going through `beforeDelete`, so it is a way to
+      // destroy a file that skips the ownership check; the server now refuses
+      // it. Uploading a new file and deleting the old one keeps every deletion
+      // on the one checked path.
+      const res = await edgestore.publicFiles.upload({ file });
 
       await update({
         id: params.documentId as Id<"documents">,
         coverImage: res.url,
       });
 
+      // Only once the note points at the new file, so a failure here orphans
+      // the old upload rather than leaving the note showing a deleted image.
+      if (previousUrl) {
+        await deleteUploadedFiles(edgestore.publicFiles, [previousUrl]);
+      }
+
       onClose();
+    } catch (error) {
+      // Without this the dropzone stayed disabled and the dialog stuck open
+      // on any failure, with no way back other than a reload.
+      console.error("Failed to set cover image:", error);
+      setFile(undefined);
+      setIsSubmitting(false);
     }
   };
 

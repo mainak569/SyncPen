@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,10 +22,8 @@ const BoardIdPage = ({ params }: BoardIdPageProps) => {
   const resolvedParams = use(params); // Unwrap the params Promise
 
   const board = useQuery(api.boards.getById, {
-    boardId: resolvedParams.boardId, // Use the unwrapped params
+    id: resolvedParams.boardId, // Use the unwrapped params
   });
-
-  const update = useMutation(api.boards.update);
 
   if (board === undefined) {
     return (
@@ -46,15 +44,13 @@ const BoardIdPage = ({ params }: BoardIdPageProps) => {
     return <div className="p-12">Not found</div>;
   }
 
-  console.log("Loaded board content:", board.content); // Debugging log
-
   return (
     <div className="h-screen">
       <Canvas
         initialContent={board.content}
-        onSaveContent={(content) =>
-          update({ id: resolvedParams.boardId, content })
-        }
+        // Published boards render read-only; a viewer is usually not the owner,
+        // so this page must never issue an update mutation.
+        onSaveContent={() => {}}
         editable={false}
       />
     </div>

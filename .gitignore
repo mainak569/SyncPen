@@ -33,6 +33,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the template of required variable names is meant to be committed.
+!.env.example
 
 # vercel
 .vercel

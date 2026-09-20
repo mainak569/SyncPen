@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -25,8 +27,15 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
+import { Id } from "@/convex/_generated/dataModel";
 
-const ChatBox = ({ pageData }: { pageData: string }) => {
+const ChatBox = ({
+  pageData,
+  documentId,
+}: {
+  pageData: string;
+  documentId: Id<"documents">;
+}) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const chatIconRef = useRef<HTMLButtonElement>(null);
 
@@ -40,7 +49,7 @@ const ChatBox = ({ pageData }: { pageData: string }) => {
     reload,
     error,
   } = useChat({
-    api: "/documents/[documentsId]/api/gemini",
+    api: `/api/documents/${documentId}/gemini`,
     body: { prompt: pageData },
   });
 

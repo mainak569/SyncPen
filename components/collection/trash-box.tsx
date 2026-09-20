@@ -3,64 +3,88 @@
 import { ConfirmModal } from "@/components/modals/confirm-modal";
 import { Spinner } from "@/components/spinner";
 import { Input } from "@/components/ui/input";
-import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useEdgeStore } from "@/lib/edgestore";
+import { deleteUploadedFiles } from "@/lib/edgestore-cleanup";
 import { Search, Trash, Undo2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  CollectionConfig,
+  CollectionTable,
+  fileUrlsFromRemove,
+} from "./config";
 
-const TrashBox = () => {
+interface TrashBoxProps<T extends CollectionTable> {
+  config: CollectionConfig<T>;
+}
+
+const TrashBox = <T extends CollectionTable>({
+  config,
+}: TrashBoxProps<T>) => {
   const router = useRouter();
   const params = useParams();
-  const boards = useQuery(api.boards.getTrash);
-  const restore = useMutation(api.boards.restore);
-  const remove = useMutation(api.boards.remove);
+  const { edgestore } = useEdgeStore();
+  const items = useQuery(config.api.getTrash, {});
+  const restore = useMutation(config.api.restore);
+  const remove = useMutation(config.api.remove);
 
   const [search, setSearch] = useState("");
-  const filteredBoards = boards?.filter((board) => {
-    return board.title.toLowerCase().includes(search.toLowerCase());
+  const filteredItems = items?.filter((item) => {
+    return item.title.toLowerCase().includes(search.toLowerCase());
   });
 
-  const onClick = (boardId: string) => {
-    router.push(`/boards/${boardId}`);
+  const onClick = (itemId: string) => {
+    router.push(`${config.basePath}/${itemId}`);
   };
 
   const onRestore = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    boardId: Id<"boards">
+    itemId: Id<T>
   ) => {
     event.stopPropagation();
-    const promise = restore({ id: boardId });
+    const promise = restore({ id: itemId });
 
     toast.promise(promise, {
-      loading: "Restoring board...",
-      success: "Board restored!",
-      error: "Failed to restore board.",
+      loading: `Restoring ${config.noun}...`,
+      success: `${config.Noun} restored!`,
+      error: `Failed to restore ${config.noun}.`,
     });
   };
 
-  const onRemove = async (boardId: Id<"boards">) => {
+  const onRemove = async (itemId: Id<T>) => {
+    // The mutation deletes the item and its whole subtree, then reports the
+    // uploads those rows owned so their EdgeStore files go too.
+    const promise = remove({ id: itemId }).then(async (result) => {
+      if (config.cleansUpUploads) {
+        await deleteUploadedFiles(
+          edgestore.publicFiles,
+          fileUrlsFromRemove(result)
+        );
+      }
+    });
+
+    toast.promise(promise, {
+      loading: `Deleting ${config.noun}...`,
+      success: `${config.Noun} deleted!`,
+      error: `Failed to delete ${config.noun}.`,
+    });
+
     // try-catch = to avoid race condition
     try {
-      const result = await toast.promise(remove({ id: boardId }), {
-        loading: "Deleting board...",
-        success: "Board deleted!",
-        error: "Failed to delete board.",
-      });
+      await promise;
 
-      if (params.boardId === boardId) {
-        router.push("/boards");
+      if (params[config.routeParam] === itemId) {
+        router.push(config.basePath);
       }
-
-      return result; // Optionally return the result of the deletion
     } catch (error) {
-      console.error("Failed to delete board:", error);
+      console.error(`Failed to delete ${config.noun}:`, error);
     }
   };
 
-  if (boards === undefined) {
+  if (items === undefined) {
     return (
       <div className="h-full flex items-center justify-center p-4">
         <Spinner size="lg" />
@@ -76,30 +100,30 @@ const TrashBox = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="h-7 px-2 focus-visible:ring-transparent bg-secondary"
-          placeholder="Filter by board title..."
+          placeholder={`Filter by ${config.noun} title...`}
         />
       </div>
       <div className="mt-2 px-1 pb-1">
         <p className="hidden last:block text-xs text-center text-muted-foreground pb-2">
-          No boards found.
+          No {config.noun}s found.
         </p>
-        {filteredBoards?.map((board) => (
+        {filteredItems?.map((item) => (
           <div
-            key={board._id}
+            key={item._id}
             role="button"
-            onClick={() => onClick(board._id)}
+            onClick={() => onClick(item._id)}
             className="text-sm rounded-sm w-full hover:bg-primary/5 flex items-center text-primary justify-between"
           >
-            <span>{board.title}</span>
+            <span>{item.title}</span>
             <div className="flex items-center">
               <div
-                onClick={(e) => onRestore(e, board._id)}
+                onClick={(e) => onRestore(e, item._id)}
                 role="button"
                 className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
               >
                 <Undo2 className="h-4 w-4 text-muted-foreground" />
               </div>
-              <ConfirmModal onConfirm={() => onRemove(board._id)}>
+              <ConfirmModal onConfirm={() => onRemove(item._id)}>
                 <div
                   role="button"
                   className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"

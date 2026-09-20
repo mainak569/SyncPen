@@ -7,7 +7,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/style.css";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 // using EdgeStore with BlockNote
 import { useEdgeStore } from "@/lib/edgestore";
@@ -18,9 +18,29 @@ interface EditorProps {
   editable?: boolean;
 }
 
+const SAVE_DELAY_MS = 500;
+
+const parseInitialContent = (
+  initialContent?: string
+): PartialBlock[] | undefined => {
+  if (!initialContent || initialContent === "[]") return undefined;
+  try {
+    const parsed = JSON.parse(initialContent) as PartialBlock[];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
+  } catch {
+    // A malformed document should open empty rather than crash the editor.
+    console.error("Failed to parse note content, starting from an empty note.");
+    return undefined;
+  }
+};
+
 const EditorNotes = ({ onChange, initialContent, editable }: EditorProps) => {
   const { theme } = useTheme();
   const { edgestore } = useEdgeStore();
+
+  // Read-only previews must never write back: the viewer of a published note
+  // is usually not its owner, so the update mutation would fail as Unauthorized.
+  const isEditable = editable !== false;
 
   const handleUpload = async (file: File) => {
     const response = await edgestore.publicFiles.upload({
@@ -30,35 +50,47 @@ const EditorNotes = ({ onChange, initialContent, editable }: EditorProps) => {
   };
 
   const editor: BlockNoteEditor = useCreateBlockNote({
-    initialContent:
-      initialContent && initialContent !== "[]"
-        ? (JSON.parse(initialContent) as PartialBlock[])
-        : undefined, // Set to undefined when empty
+    initialContent: parseInitialContent(initialContent),
     uploadFile: handleUpload,
   });
 
+  // Kept in a ref so the debounce timer is not torn down every render just
+  // because the parent passes a fresh onChange closure.
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
-    if (!editor) return;
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
-    const handleUpdate = () => {
-      const content = JSON.stringify(editor.document, null, 2);
-      onChange(content);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // BlockNote fires on every keystroke; without this each one is a DB write.
+  const handleChange = useCallback(() => {
+    if (!isEditable) return;
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      onChangeRef.current(JSON.stringify(editor.document, null, 2));
+    }, SAVE_DELAY_MS);
+  }, [editor, isEditable]);
+
+  // Don't drop the last edit if the page unmounts mid-debounce.
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        if (isEditable) {
+          onChangeRef.current(JSON.stringify(editor.document, null, 2));
+        }
+      }
     };
-
-    // Run update whenever editor document changes
-    const observer = new MutationObserver(handleUpdate);
-    if (editor.domElement) {
-      observer.observe(editor.domElement, { childList: true, subtree: true });
-    }
-
-    return () => observer.disconnect(); // Cleanup
-  }, [editor, onChange]);
+  }, [editor, isEditable]);
 
   return (
     <div>
       <BlockNoteView
         editor={editor}
-        editable={editable}
+        editable={isEditable}
+        onChange={handleChange}
         theme={theme === "dark" ? "dark" : "light"}
       />
     </div>

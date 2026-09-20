@@ -9,8 +9,10 @@ import { ToolbarNotes } from "@/components/toolbar-notes";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import ChatBox from "./_components/chatBox";
+import { useEdgeStore } from "@/lib/edgestore";
+import { useOrphanedUploads } from "@/hooks/use-orphaned-uploads";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -25,16 +27,40 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   );
   const resolvedParams = use(params); // Unwrap the params Promise
   const document = useQuery(api.documents.getById, {
-    documentId: resolvedParams.documentId, // Use the unwrapped params
+    id: resolvedParams.documentId, // Use the unwrapped params
   });
 
   const update = useMutation(api.documents.update);
+
+  const { edgestore } = useEdgeStore();
+
+  // Deletes uploads the user edits out of this note. Lives here rather than in
+  // the editor because this is where the note is persisted — and because the
+  // read-only preview page passes its own no-op onChange, so a viewer of a
+  // published note can never reach it.
+  const trackUploads = useOrphanedUploads(edgestore.publicFiles);
+
+  // Baseline for that comparison: what the note held when it loaded, so the
+  // first removal registers instead of being read as the starting state. Runs
+  // once, on the first content the query returns.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    // Keyed on the note having loaded, not on it having content: a brand-new
+    // note has none, and waiting for some would re-baseline mid-edit and drop
+    // a pending removal.
+    if (seededRef.current || !document) return;
+    seededRef.current = true;
+    trackUploads(document.content ?? "");
+  }, [document, trackUploads]);
 
   const onChange = (content: string) => {
     update({
       id: resolvedParams.documentId,
       content: content,
     });
+
+    // Compared against the previous save to spot uploads edited out.
+    trackUploads(content);
   };
   //////////////////////////////////////////////////////////////
 
@@ -85,7 +111,10 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
           }
         />
         {/* passing context of the editor as a prop */}
-        <ChatBox pageData={extractedText} />
+        <ChatBox
+          pageData={extractedText}
+          documentId={resolvedParams.documentId}
+        />
       </div>
     </div>
   );

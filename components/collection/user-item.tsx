@@ -1,4 +1,5 @@
 "use client";
+
 import { ChevronsLeftRight } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,6 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton, useUser } from "@clerk/clerk-react";
 
+/**
+ * The signed-in user's row at the top of the sidebar. Identical for notes and
+ * boards — it was duplicated byte-for-byte between the two — so it takes no
+ * collection config.
+ */
 const UserItem = () => {
   const { user } = useUser();
   return (

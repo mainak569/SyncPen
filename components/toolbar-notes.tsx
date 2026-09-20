@@ -77,7 +77,7 @@ export const ToolbarNotes = ({ initialData, preview }: ToolbarProps) => {
           </IconPicker>
           <Button
             onClick={onRemoveIcon}
-            className="rounded-full opacity-0 group-hover/ icon:opacity-100 transition text-muted-foreground text-xs"
+            className="rounded-full opacity-0 group-hover/icon:opacity-100 transition text-muted-foreground text-xs"
             variant="outline"
             size="icon"
           >

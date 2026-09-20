@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { Item } from "../app/(main)/(notes)/_components/item"; // Import Item component
+import { SidebarItem } from "@/components/sidebar-item";
 
 export function AppearanceToggler() {
   const { theme, setTheme, systemTheme } = useTheme();
@@ -25,7 +25,7 @@ export function AppearanceToggler() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div>
-          <Item label="Appearance" icon={Icon} onClick={() => {}} />
+          <SidebarItem label="Appearance" icon={Icon} />
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

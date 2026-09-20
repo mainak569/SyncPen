@@ -1,28 +1,22 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
-import { error } from "console";
+import { requireOwnership, requireUserId } from "./model/auth";
+
+/**
+ * Upper bound on the rows a single list query will return.
+ *
+ * These queries used to `.collect()` with no limit, which reads the user's
+ * entire table into memory — Convex aborts a query that reads too much, so a
+ * heavy account would see the sidebar/trash/search fail outright rather than
+ * degrade. An explicit cap turns that hard failure into a truncated list.
+ */
+const MAX_RESULTS = 500;
 
 export const archive = mutation({
   args: { id: v.id("boards") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const userId = identity.subject;
-
-    const existingBoard = await ctx.db.get(args.id);
-
-    if (!existingBoard) {
-      throw new Error("Not found");
-    }
-
-    if (existingBoard.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
+    const { userId } = await requireOwnership(ctx, "boards", args.id);
 
     // if archive, doing for all of it's children
     const recursiveArchive = async (boardId: Id<"boards">) => {
@@ -52,8 +46,12 @@ export const archive = mutation({
 });
 
 export const getSidebar = query({
+  // Named `parentId`, not `parentBoard`, so this signature is identical to
+  // documents.getSidebar. The shared sidebar components are generic over the
+  // two collections and can only be if the argument names match; the stored
+  // field keeps its own name below.
   args: {
-    parentBoard: v.optional(v.id("boards")),
+    parentId: v.optional(v.id("boards")),
   },
   handler: async (ctx, args) => {
     /*
@@ -63,44 +61,36 @@ export const getSidebar = query({
       ctx.scheduler → Allows scheduling background jobs 
     */
 
-    const identity = await ctx.auth.getUserIdentity(); // get logged-in user
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const userId = identity.subject;
-    // `subject` which is a unique identifier assigned to the user by the authentication provider
+    // Resolves the signed-in user's id (Clerk's `subject`), throwing if the
+    // caller is anonymous.
+    const userId = await requireUserId(ctx);
 
     // fetching only those boards, which belong to the user, filtered by `parentBoard` and `isArchived` and then sorted newest to oldest
     const boards = await ctx.db
       .query("boards")
       .withIndex("by_user_parent", (q) =>
-        q.eq("userId", userId).eq("parentBoard", args.parentBoard)
+        q.eq("userId", userId).eq("parentBoard", args.parentId)
       )
       .filter((q) => q.eq(q.field("isArchived"), false))
       .order("desc")
-      .collect();
+      .take(MAX_RESULTS);
     return boards; // boardId
   },
 });
 
 export const create = mutation({
+  // `parentId` rather than `parentBoard`, to match documents.create — see the
+  // note on getSidebar.
   args: {
     title: v.string(),
-    parentBoard: v.optional(v.id("boards")), // `id` is stored in convex db (online)
+    parentId: v.optional(v.id("boards")), // `id` is stored in convex db (online)
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not Authenticated");
-    }
-
-    const userId = identity.subject;
+    const userId = await requireUserId(ctx);
 
     const boards = await ctx.db.insert("boards", {
       title: args.title,
-      parentBoard: args.parentBoard,
+      parentBoard: args.parentId,
       userId,
       isArchived: false,
       isPublished: false,
@@ -112,20 +102,14 @@ export const create = mutation({
 
 export const getTrash = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const userId = identity.subject;
+    const userId = await requireUserId(ctx);
 
     const boards = await ctx.db
       .query("boards")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isArchived"), true))
       .order("desc")
-      .collect();
+      .take(MAX_RESULTS);
 
     return boards;
   },
@@ -134,23 +118,11 @@ export const getTrash = query({
 export const restore = mutation({
   args: { id: v.id("boards") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const userId = identity.subject;
-
-    const existingBoard = await ctx.db.get(args.id);
-
-    if (!existingBoard) {
-      throw new Error("Not found");
-    }
-
-    if (existingBoard.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
+    const { userId, existing: existingBoard } = await requireOwnership(
+      ctx,
+      "boards",
+      args.id
+    );
 
     // restoring all of it's child for it's parent
     const recursiveRestore = async (boardId: Id<"boards">) => {
@@ -184,7 +156,7 @@ export const restore = mutation({
 
     const board = await ctx.db.patch(args.id, options);
 
-    recursiveRestore(args.id);
+    await recursiveRestore(args.id);
 
     return board;
   },
@@ -194,23 +166,27 @@ export const restore = mutation({
 export const remove = mutation({
   args: { id: v.id("boards") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const { userId } = await requireOwnership(ctx, "boards", args.id);
 
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    // Deleting only the parent used to strand its whole subtree: the children
+    // kept a parentBoard pointing at a row that no longer exists, so they
+    // lingered in the trash with no way to reach them from their parent.
+    // "Delete forever" now cascades, mirroring how archive/restore behave.
+    const recursiveRemove = async (boardId: Id<"boards">) => {
+      const children = await ctx.db
+        .query("boards")
+        .withIndex("by_user_parent", (q) =>
+          q.eq("userId", userId).eq("parentBoard", boardId)
+        )
+        .collect();
 
-    const userId = identity.subject;
+      for (const child of children) {
+        await recursiveRemove(child._id);
+        await ctx.db.delete(child._id);
+      }
+    };
 
-    const existingBoard = await ctx.db.get(args.id);
-
-    if (!existingBoard) {
-      throw new Error("Not found");
-    }
-
-    if (existingBoard.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
+    await recursiveRemove(args.id);
 
     const board = await ctx.db.delete(args.id);
 
@@ -221,31 +197,26 @@ export const remove = mutation({
 // search
 export const getSearch = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const userId = identity.subject;
+    const userId = await requireUserId(ctx);
 
     const boards = await ctx.db
       .query("boards")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isArchived"), false))
       .order("desc")
-      .collect();
+      .take(MAX_RESULTS);
     return boards;
   },
 });
 
 // publish
 export const getById = query({
-  args: { boardId: v.id("boards") },
+  // `id` rather than `boardId`, to match documents.getById — see getSidebar.
+  args: { id: v.id("boards") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
 
-    const board = await ctx.db.get(args.boardId);
+    const board = await ctx.db.get(args.id);
 
     if (!board) {
       throw new Error("Not found");
@@ -280,25 +251,9 @@ export const update = mutation({
     isPublished: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Unauthenticated");
-    }
-
-    const userId = identity.subject;
+    await requireOwnership(ctx, "boards", args.id);
 
     const { id, ...rest } = args;
-
-    const existingBoard = await ctx.db.get(args.id);
-
-    if (!existingBoard) {
-      throw new Error("Not found");
-    }
-
-    if (existingBoard.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
 
     const board = await ctx.db.patch(args.id, {
       ...rest,

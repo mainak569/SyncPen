@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { CoverNotes } from "@/components/cover-notes";
@@ -24,18 +24,12 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   );
   const resolvedParams = use(params); // Unwrap the params Promise
   const document = useQuery(api.documents.getById, {
-    documentId: resolvedParams.documentId, // Use the unwrapped params
+    id: resolvedParams.documentId, // Use the unwrapped params
   });
 
-  const update = useMutation(api.documents.update);
-
-  const onChange = (content: string) => {
-    console.log("Invoked onChange : ", content);
-    update({
-      id: resolvedParams.documentId,
-      content: content,
-    });
-  };
+  // This page renders a published note read-only. A viewer is usually not the
+  // note's owner, so it must never issue an update mutation.
+  const onChange = () => {};
 
   if (document === undefined) {
     return (

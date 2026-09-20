@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useTheme } from "next-themes";
@@ -13,6 +13,10 @@ interface CanvasProps {
   onSaveContent: (content: string) => void;
   editable?: boolean;
 }
+
+// Excalidraw fires onChange on every pointer move; without this each one
+// would be a full board write to the database.
+const SAVE_DELAY_MS = 500;
 
 const Canvas: React.FC<CanvasProps> = ({
   initialContent,
@@ -38,6 +42,21 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   }, [initialContent]);
 
+  // Kept in a ref so the debounce timer is not reset every render just because
+  // the parent passes a fresh onSaveContent closure.
+  const onSaveContentRef = useRef(onSaveContent);
+  useEffect(() => {
+    onSaveContentRef.current = onSaveContent;
+  }, [onSaveContent]);
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[]) => {
       if (!editable || !excalidrawAPI) return;
@@ -55,9 +74,12 @@ const Canvas: React.FC<CanvasProps> = ({
         },
       });
 
-      onSaveContent(content);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        onSaveContentRef.current(content);
+      }, SAVE_DELAY_MS);
     },
-    [editable, excalidrawAPI, onSaveContent]
+    [editable, excalidrawAPI]
   );
 
   return (

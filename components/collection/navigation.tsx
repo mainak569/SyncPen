@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/popover";
 
 import UserItem from "./user-item";
-import DocumentList from "./document-list";
-import { Item } from "./item";
+import CollectionList from "./collection-list";
 import TrashBox from "./trash-box";
+import { SidebarItem } from "@/components/sidebar-item";
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
@@ -29,19 +29,31 @@ import { useMediaQuery } from "usehooks-ts";
 import { toast } from "sonner";
 import { AppearanceToggler } from "@/components/appearences";
 import { useMutation } from "convex/react"; // For interacting with Convex database
-import { api } from "@/convex/_generated/api";
 import { useSearch } from "@/hooks/use-search";
 import { useSettings } from "@/hooks/use-settings";
 import { Navbar } from "./navbar";
+import { CollectionConfig, CollectionTable } from "./config";
 
-const Navigation = () => {
+interface NavigationProps<T extends CollectionTable> {
+  config: CollectionConfig<T>;
+}
+
+/**
+ * The resizable sidebar, plus the navbar that sits beside it.
+ *
+ * This is the entry point the route layouts mount: everything below it is
+ * shared between notes and boards and driven by the config.
+ */
+const Navigation = <T extends CollectionTable>({
+  config,
+}: NavigationProps<T>) => {
   const router = useRouter();
   const settings = useSettings();
   const search = useSearch();
   const pathname = usePathname();
   const params = useParams();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const create = useMutation(api.documents.create);
+  const create = useMutation(config.api.create);
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<HTMLElement | null>(null);
@@ -125,14 +137,14 @@ const Navigation = () => {
   }, []);
 
   const handleCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) =>
-      router.push(`/documents/${documentId}`)
+    const promise = create({ title: "Untitled" }).then((itemId) =>
+      router.push(`${config.basePath}/${itemId}`)
     );
 
     toast.promise(promise, {
-      loading: "Creating a new note...",
-      success: "New note created!",
-      error: "Failed to create a new note.",
+      loading: `Creating a new ${config.noun}...`,
+      success: `New ${config.noun} created!`,
+      error: `Failed to create a new ${config.noun}.`,
     });
   };
 
@@ -176,25 +188,42 @@ const Navigation = () => {
         <div>
           <UserItem />
           <Link href="/">
-            <Item label="Home" icon={Home} />
+            <SidebarItem label="Home" icon={Home} />
           </Link>
           <AppearanceToggler />
-          <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
-          <Item label="Settings" icon={Settings} onClick={settings.onOpen} />
-          <Item onClick={handleCreate} label="New Note" icon={FilePlus} />
+          <SidebarItem
+            label="Search"
+            icon={Search}
+            isSearch
+            onClick={search.onOpen}
+          />
+          <SidebarItem
+            label="Settings"
+            icon={Settings}
+            onClick={settings.onOpen}
+          />
+          <SidebarItem
+            onClick={handleCreate}
+            label={`New ${config.Noun}`}
+            icon={FilePlus}
+          />
         </div>
         <div className="mt-4">
-          <DocumentList />
-          <Item onClick={handleCreate} label="Add a Note" icon={PlusCircle} />
+          <CollectionList config={config} />
+          <SidebarItem
+            onClick={handleCreate}
+            label={`Add a ${config.Noun}`}
+            icon={PlusCircle}
+          />
           <Popover>
             <PopoverTrigger className="w-full mt-4">
-              <Item label="Trash" icon={Trash2} />
+              <SidebarItem label="Trash" icon={Trash2} />
             </PopoverTrigger>
             <PopoverContent
               className="p-0 w-72"
               side={isMobile ? "bottom" : "right"}
             >
-              <TrashBox />
+              <TrashBox config={config} />
             </PopoverContent>
           </Popover>
         </div>
@@ -211,8 +240,12 @@ const Navigation = () => {
           isMobile ? "w-0 left-0" : "left-60 w-[calc(100%-240px)]"
         )}
       >
-        {!!params.documentId ? (
-          <Navbar isCollapsed={isCollapsed} onResetWidth={resetWidth} />
+        {!!params[config.routeParam] ? (
+          <Navbar
+            config={config}
+            isCollapsed={isCollapsed}
+            onResetWidth={resetWidth}
+          />
         ) : (
           <nav className="bg-transparent px-3 py-2 w-full">
             {isCollapsed && (

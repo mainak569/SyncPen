@@ -1,63 +1,52 @@
-"use client";
-
-import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 /**
- * Crash boundary. This previously rendered "404 - Not Found", which told the
- * user the wrong thing: a 404 is a missing route (see not-found.tsx), whereas
- * this file only renders when something actually threw.
+ * Real 404 page. Previously the app had none, so a bad URL fell through to
+ * Next.js's bare default while the crash boundary claimed to be the 404.
  */
-const Error = ({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) => {
-  useEffect(() => {
-    console.error("Unhandled application error:", error);
-  }, [error]);
-
+const NotFound = () => {
   return (
     <div className="dark:bg-[#1F1F1F] min-h-screen flex flex-col items-center justify-center text-center px-6 space-y-6">
       <div className="w-full max-w-[90%] sm:max-w-[80%] md:max-w-[60%] lg:max-w-[40%] mx-auto">
         <Image
-          src="/crashed-error.svg"
+          src="/empty.svg"
           height={350}
           width={350}
-          alt="Something went wrong"
+          alt="Page not found"
           className="dark:hidden w-full"
         />
         <Image
-          src="/crashed-error_dark.svg"
+          src="/empty_dark.svg"
           height={350}
           width={350}
-          alt="Something went wrong"
+          alt="Page not found"
           className="hidden dark:block w-full"
         />
       </div>
 
       <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">
-        Something went wrong
+        404 - Not Found
       </h1>
 
       <p className="text-sm sm:text-base md:text-lg text-gray-400 max-w-md mx-auto">
-        SyncPen hit an unexpected error. Trying again often clears it.
+        The page you are looking for does not exist or has been moved.
       </p>
 
       <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mb-6">
-        <Button className="w-full sm:w-auto" onClick={reset}>
-          Try again
-        </Button>
-        <Button className="w-full sm:w-auto" variant="outline" asChild>
+        <Button className="w-full sm:w-auto" asChild>
           <Link href="/">Go Home</Link>
+        </Button>
+        <Button className="w-full sm:w-auto" asChild>
+          <Link href="/documents">Sync a Note</Link>
+        </Button>
+        <Button className="w-full sm:w-auto" asChild>
+          <Link href="/boards">Sync a Board</Link>
         </Button>
       </div>
     </div>
   );
 };
 
-export default Error;
+export default NotFound;

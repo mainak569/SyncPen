@@ -12,32 +12,36 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CollectionConfig, CollectionTable } from "./config";
 
-interface MenuProps {
-  documentId: Id<"documents">;
+interface MenuProps<T extends CollectionTable> {
+  config: CollectionConfig<T>;
+  itemId: Id<T>;
 }
 
-export const Menu = ({ documentId }: MenuProps) => {
+/** The "..." menu in the navbar, for archiving the open item. */
+export const Menu = <T extends CollectionTable>({
+  config,
+  itemId,
+}: MenuProps<T>) => {
   const router = useRouter();
   const user = useUser();
-  const archive = useMutation(api.documents.archive);
-  console.log(user);
+  const archive = useMutation(config.api.archive);
 
   const onArchive = () => {
-    const promise = archive({ id: documentId });
+    const promise = archive({ id: itemId });
 
     toast.promise(promise, {
       loading: "Moving to trash...",
-      success: "Note moved to trash!",
-      error: "Failed to archive note.",
+      success: `${config.Noun} moved to trash!`,
+      error: `Failed to archive ${config.noun}.`,
     });
 
-    router.push("/documents");
+    router.push(config.basePath);
   };
 
   return (

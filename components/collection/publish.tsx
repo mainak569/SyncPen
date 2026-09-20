@@ -6,26 +6,30 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useOrigin } from "@/hooks/use-origin";
 import { useMutation } from "convex/react";
 import { Check, Copy, Globe } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CollectionConfig, CollectionTable } from "./config";
 
-interface PublishProps {
-  initialData: Doc<"documents">;
+interface PublishProps<T extends CollectionTable> {
+  config: CollectionConfig<T>;
+  initialData: Doc<T>;
 }
 
-export const Publish = ({ initialData }: PublishProps) => {
+export const Publish = <T extends CollectionTable>({
+  config,
+  initialData,
+}: PublishProps<T>) => {
   const origin = useOrigin();
-  const update = useMutation(api.documents.update);
+  const update = useMutation(config.api.update);
 
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const url = `${origin}/notesPreview/${initialData._id}`;
+  const url = `${origin}${config.previewPath}/${initialData._id}`;
 
   const onPublish = () => {
     setIsSubmitting(true);
@@ -37,8 +41,8 @@ export const Publish = ({ initialData }: PublishProps) => {
 
     toast.promise(promise, {
       loading: "Publishing",
-      success: "Note Published",
-      error: "Failed to publish note",
+      success: `${config.Noun} Published`,
+      error: `Failed to publish ${config.noun}`,
     });
   };
 
@@ -52,8 +56,8 @@ export const Publish = ({ initialData }: PublishProps) => {
 
     toast.promise(promise, {
       loading: "Unpublishing",
-      success: "Note Unpublished",
-      error: "Failed to unpublish note",
+      success: `${config.Noun} Unpublished`,
+      error: `Failed to unpublish ${config.noun}`,
     });
   };
 
@@ -82,7 +86,7 @@ export const Publish = ({ initialData }: PublishProps) => {
             <div className="flex items-center gap-x-2">
               <Globe className="text-sky-500 animate-pulse h-4 w-4" />
               <p className="text-xs font-medium text-sky-500">
-                This note is live on web.
+                This {config.noun} is live on web.
               </p>
             </div>
             <div className="flex items-center">
@@ -115,7 +119,9 @@ export const Publish = ({ initialData }: PublishProps) => {
         ) : (
           <div className="flex flex-col items-center justify-center">
             <Globe className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium mb-2">Publish this note</p>
+            <p className="text-sm font-medium mb-2">
+              Publish this {config.noun}
+            </p>
             <span className="text-xs text-muted-foreground mb-4">
               Share your work with others.
             </span>
