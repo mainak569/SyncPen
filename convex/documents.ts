@@ -315,9 +315,13 @@ export const getSearch = query({
 // publish
 export const getById = query({
   // `id` rather than `documentId`, to match boards.getById — see getSidebar.
-  args: { id: v.id("documents") },
+  // A plain string, not v.id(): this id comes straight from a URL, and a
+  // malformed one failed argument validation — which crashed the page
+  // instead of reaching the "not available" state below.
+  args: { id: v.string() },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.id);
+    const id = ctx.db.normalizeId("documents", args.id);
+    const document = id && (await ctx.db.get(id));
 
     // Anything the caller may not see comes back as null rather than an
     // error. Throwing sent every dead link — a deleted note, an unpublished
@@ -357,7 +361,7 @@ export const update = mutation({
 
     const { id, ...rest } = args;
 
-    const document = await ctx.db.patch(args.id, {
+    const document = await ctx.db.patch(id, {
       ...rest,
     });
 

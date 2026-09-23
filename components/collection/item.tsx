@@ -117,6 +117,8 @@ export const Item = <T extends CollectionTable>({
     >
       <div
         role="button"
+        aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
+        aria-expanded={expanded}
         className="h-full rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 mr-1"
         onClick={handleExpand}
       >
@@ -133,6 +135,7 @@ export const Item = <T extends CollectionTable>({
             <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} asChild>
               <div
                 role="button"
+                aria-label={`More options for ${label}`}
                 className="opacity-0 group-hover:opacity-100 h-full ml-auto
              rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 max-[1080px]:opacity-100"
               >
@@ -157,6 +160,7 @@ export const Item = <T extends CollectionTable>({
           </DropdownMenu>
           <div
             role="button"
+            aria-label={`Add a ${config.noun} inside ${label}`}
             onClick={onCreate}
             className="opacity-0 group-hover:opacity-100 h-full ml-auto
     rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 max-[1080px]:opacity-100"

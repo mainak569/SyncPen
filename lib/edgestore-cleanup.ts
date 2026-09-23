@@ -32,3 +32,29 @@ export const deleteUploadedFiles = async (
     })
   );
 };
+
+type UnreferencedQuery = (urls: string[]) => Promise<string[]>;
+
+/**
+ * Deletes only those of `fileUrls` that no note of the user still references.
+ *
+ * For paths that drop one reference to a file — replacing or removing a cover
+ * — rather than deleting whole rows. The file may still be used elsewhere (the
+ * same image pasted into another note), so "this note let go of it" is never
+ * enough on its own; the server-side scan decides. Call it after the mutation
+ * that drops the reference, so the reference being removed doesn't count.
+ */
+export const deleteUnreferencedFiles = async (
+  publicFiles: PublicFilesClient,
+  findUnreferenced: UnreferencedQuery,
+  fileUrls: string[]
+): Promise<void> => {
+  if (fileUrls.length === 0) return;
+
+  try {
+    await deleteUploadedFiles(publicFiles, await findUnreferenced(fileUrls));
+  } catch (error) {
+    // Leaks the file, which is the safe direction.
+    console.error("Failed to check uploads before deleting:", error);
+  }
+};

@@ -1,10 +1,11 @@
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -12,12 +13,13 @@ import { useCoverImage } from "@/hooks/use-cover-image";
 import { SingleImageDropzone } from "@/components/single-image-dropzone";
 import { api } from "@/convex/_generated/api";
 import { useEdgeStore } from "@/lib/edgestore";
-import { deleteUploadedFiles } from "@/lib/edgestore-cleanup";
+import { deleteUnreferencedFiles } from "@/lib/edgestore-cleanup";
 import { Id } from "@/convex/_generated/dataModel";
 
 export const CoverImageNotesModal = () => {
   const params = useParams();
   const update = useMutation(api.documents.update);
+  const convex = useConvex();
   const coverImage = useCoverImage();
   const { edgestore } = useEdgeStore();
 
@@ -36,11 +38,17 @@ export const CoverImageNotesModal = () => {
     setIsSubmitting(true);
     setFile(file);
 
-    // The previous cover, when this is a "Change Cover" rather than a first
-    // upload. Captured before the store is reset by onClose().
-    const previousUrl = coverImage.url;
+    const documentId = params.documentId as Id<"documents">;
 
     try {
+      // The cover being replaced, read from the note itself rather than from
+      // the dialog store: the store only knows about it when the dialog was
+      // opened with "Change Cover", and a stale store left the old file
+      // behind in storage.
+      const previousUrl = (
+        await convex.query(api.documents.getById, { id: documentId })
+      )?.coverImage;
+
       // Deliberately not an EdgeStore replace. A replace overwrites the old
       // file in place without going through `beforeDelete`, so it is a way to
       // destroy a file that skips the ownership check; the server now refuses
@@ -49,14 +57,19 @@ export const CoverImageNotesModal = () => {
       const res = await edgestore.publicFiles.upload({ file });
 
       await update({
-        id: params.documentId as Id<"documents">,
+        id: documentId,
         coverImage: res.url,
       });
 
       // Only once the note points at the new file, so a failure here orphans
       // the old upload rather than leaving the note showing a deleted image.
+      // …and only if no other note still shows it.
       if (previousUrl) {
-        await deleteUploadedFiles(edgestore.publicFiles, [previousUrl]);
+        await deleteUnreferencedFiles(
+          edgestore.publicFiles,
+          (urls) => convex.query(api.documents.findUnreferencedFiles, { urls }),
+          [previousUrl]
+        );
       }
 
       onClose();
@@ -76,6 +89,9 @@ export const CoverImageNotesModal = () => {
           <DialogTitle className="text-center text-lg font-semibold">
             Cover Image
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Upload an image to use as this note’s cover.
+          </DialogDescription>
         </DialogHeader>
         <SingleImageDropzone
           className="w-full outline-none"

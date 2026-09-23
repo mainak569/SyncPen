@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +19,9 @@ export const SettingsModal = () => {
       <DialogContent>
         <DialogHeader className="border-b pb-3">
           <DialogTitle>My settings</DialogTitle>
+          <DialogDescription className="sr-only">
+            Manage how SyncPen looks on this device.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-y-1">

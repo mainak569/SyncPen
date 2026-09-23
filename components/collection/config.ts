@@ -37,7 +37,7 @@ type CollectionApi<T extends CollectionTable> = {
   getById: FunctionReference<
     "query",
     "public",
-    { id: Id<T> },
+    { id: string },
     Doc<T> | null
   >;
   create: FunctionReference<

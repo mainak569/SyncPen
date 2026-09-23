@@ -10,7 +10,7 @@ const domain =
   process.env.CLERK_JWT_ISSUER_DOMAIN ||
   "https://worthy-clam-63.clerk.accounts.dev/";
 
-export default {
+const authConfig = {
   providers: [
     {
       domain,
@@ -18,3 +18,5 @@ export default {
     },
   ],
 };
+
+export default authConfig;

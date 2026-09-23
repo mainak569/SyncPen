@@ -11,13 +11,13 @@
     <a href="https://sync-pen-six.vercel.app/"><strong>🌐 Explore the Live Demo »</strong></a>
   </p>
 
-  [![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-  [![React](https://img.shields.io/badge/React-19.0.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+  [![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+  [![React](https://img.shields.io/badge/React-19.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
   [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
   [![Convex](https://img.shields.io/badge/Convex-1.20-EE342F?style=for-the-badge&logo=convex&logoColor=white)](https://www.convex.dev/)
   [![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.com/)
-  [![Google Gemini](https://img.shields.io/badge/Google_Gemini-1.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+  [![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
   [![Excalidraw](https://img.shields.io/badge/Excalidraw-Infinite_Canvas-6965DB?style=for-the-badge&logoColor=white)](https://excalidraw.com/)
   [![EdgeStore](https://img.shields.io/badge/EdgeStore-Blob_Storage-000000?style=for-the-badge&logo=icloud&logoColor=white)](https://edgestore.dev/)
   [![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
@@ -32,7 +32,7 @@
 - [Key Features](#-key-features)
   - [1. Notion-Style Document Editor](#1--notion-style-document-editor-blocknote)
   - [2. Infinite Whiteboard Canvas](#2--infinite-whiteboard-canvas-excalidraw)
-  - [3. Dual-Layer AI Assistant](#3--dual-layer-ai-assistant-google-gemini-15-flash)
+  - [3. Dual-Layer AI Assistant](#3--dual-layer-ai-assistant-google-gemini-35-flash)
   - [4. Real-Time Reactive Backend](#4--real-time-reactive-backend-convex)
   - [5. Authentication & Security](#5--authentication--security-clerk)
   - [6. Media & Asset Storage](#6--media--asset-storage-edgestore)
@@ -45,6 +45,7 @@
   - [Prerequisites](#prerequisites)
   - [Step-by-Step Installation](#step-by-step-installation)
 - [Environment Variables Guide](#-environment-variables-guide)
+- [Deployment](#-deployment-vercel--convex)
 - [Available Scripts](#-available-scripts)
 - [Contributing](#-contributing)
 - [Author & Acknowledgments](#-author--acknowledgments)
@@ -57,7 +58,7 @@
 
 - **Plan & Document**: Write structured, beautiful documents with a rich block editor featuring slash commands, emoji icons, tables, and cover images.
 - **Draw & Sketch**: Brainstorm on an infinite Excalidraw whiteboard canvas with real-time viewport zoom and coordinate persistence.
-- **Ask AI in Context**: Leverage Google Gemini 1.5 Flash to converse with your documents. The assistant automatically parses your active note's block tree to summarize, explain, expand, and draft content with zero manual copy-pasting.
+- **Ask AI in Context**: Leverage Google Gemini 3.5 Flash to converse with your documents. The assistant automatically parses your active note's block tree to summarize, explain, expand, and draft content with zero manual copy-pasting.
 - **Real-Time Reactive Cloud**: Powered by Convex, every keystroke, canvas vector, and document status updates across all connected clients instantly with zero HTTP polling.
 
 ---
@@ -81,11 +82,11 @@
 - **Canvas Management**: Instant canvas clearing, custom background color selection, and exporting diagrams as PNG or SVG.
 - **Public Board Sharing**: Publish boards to shareable public links (`/boardsPreview/[boardId]`).
 
-### 3. 🤖 Dual-Layer AI Assistant (Google Gemini 1.5 Flash)
+### 3. 🤖 Dual-Layer AI Assistant (Google Gemini 3.5 Flash)
 - **Page-Aware In-Document Assistant (`/documents/[documentId]`)**:
   - Automatically traverses and parses the BlockNote abstract syntax tree (AST) via `extractTextFromDocument`.
   - Extracts text from paragraphs, headers, tables, and nested blocks.
-  - Injects live page content into Google Gemini 1.5 Flash via Edge API routes, allowing users to ask questions, request summaries, extract action items, or generate new sections based specifically on their current document.
+  - Injects live page content into Google Gemini 3.5 Flash via Edge API routes, allowing users to ask questions, request summaries, extract action items, or generate new sections based specifically on their current document.
 - **Landing Page Support Assistant**:
   - Interactive chatbot on the marketing landing page built with Vercel AI SDK (`useChat` & `streamText`).
   - Streams real-time answers to user questions about SyncPen's features, capabilities, and productivity workflows.
@@ -146,7 +147,7 @@ graph TD
     subgraph AI["AI Layer (Vercel AI SDK + Google)"]
         GeminiRoute["Edge API (/api/gemini)"]
         GeminiDocRoute["Doc Context API (/documents/[id]/api/gemini)"]
-        GeminiLLM["Google Gemini 1.5 Flash"]
+        GeminiLLM["Google Gemini 3.5 Flash"]
     end
 
     subgraph Storage["Cloud Asset Storage"]
@@ -172,9 +173,9 @@ graph TD
 
 | Category | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Framework** | [Next.js](https://nextjs.org/) | `15.2.4` | App Router, Turbopack, Edge runtime API handlers, SSR & dynamic imports |
+| **Framework** | [Next.js](https://nextjs.org/) | `15.5` | App Router, Turbopack, Edge runtime API handlers, SSR & dynamic imports |
 | **Language** | [TypeScript](https://www.typescriptlang.org/) | `^5` | Strict type safety across frontend and backend data models |
-| **UI Library** | [React](https://react.dev/) | `19.0.0` | Declarative component UI engine |
+| **UI Library** | [React](https://react.dev/) | `19.3` | Declarative component UI engine |
 | **Styling** | [Tailwind CSS](https://tailwindcss.com/) | `^4` | Utility-first responsive styling with modern PostCSS pipeline |
 | **Components** | [ShadCN / Radix UI](https://ui.shadcn.com/) | Latest | Accessible headless UI primitives (dialogs, popovers, dropdowns, scroll-area) |
 | **Rich Text Editor** | [BlockNote](https://www.blocknotejs.org/) | `0.26.0` | Notion-like block-based WYSIWYG editor with formatting toolbars |
@@ -182,7 +183,7 @@ graph TD
 | **Real-Time Backend** | [Convex](https://www.convex.dev/) | `1.20.0` | Serverless reactive database, WebSocket subscriptions, and transactions |
 | **Authentication** | [Clerk](https://clerk.com/) | `6.12.5` | User authentication, identity management, and JWT session handling |
 | **AI Integration** | [Vercel AI SDK](https://sdk.vercel.ai/) | `4.2.10` | Stream handling, conversation state management (`useChat`, `streamText`) |
-| **LLM Provider** | [Google Gemini](https://ai.google.dev/) | `@ai-sdk/google 1.2` | Contextual question answering, document summarization (`gemini-1.5-flash`) |
+| **LLM Provider** | [Google Gemini](https://ai.google.dev/) | `@ai-sdk/google 1.2` | Contextual question answering, document summarization (`gemini-3.5-flash`, overridable via `GEMINI_MODEL`) |
 | **File Storage** | [EdgeStore](https://edgestore.dev/) | `0.3.3` | Optimized cloud storage bucket for cover images and document attachments |
 | **Motion & 3D** | [Framer Motion](https://www.framer.com/motion/) | `12.6.3` | Smooth layout transitions, splash screens, and 3D card perspective tilt |
 | **3D Graphics** | [Spline](https://spline.design/) | `4.0.0` | Embedded interactive 3D WebGL scene rendering |
@@ -256,7 +257,7 @@ SyncPen-main/
 │   │       ├── documents/                      # Document routes
 │   │       │   ├── [documentId]/               # Active document view
 │   │       │   │   ├── _components/            # Page-aware in-document chatBox
-│   │       │   │   ├── api/gemini/route.ts     # Document-aware Gemini 1.5 Flash endpoint
+│   │       │   │   ├── api/gemini/route.ts     # Document-aware Gemini endpoint
 │   │       │   │   └── page.tsx                # BlockNote editor page with AST text parser
 │   │       │   └── page.tsx                    # Notes welcome / create note page
 │   │       └── layout.tsx                      # Notes layout wrapper
@@ -361,17 +362,11 @@ To enable Convex to verify Clerk user identities:
 2. Select the **Convex** template.
 3. Keep the template name as `convex` and save.
 4. Copy the **Issuer URL** from Clerk.
-5. In `convex/auth.config.ts`, verify the domain matches your Clerk Issuer URL:
-   ```typescript
-   export default {
-     providers: [
-       {
-         domain: "https://your-clerk-issuer-domain.clerk.accounts.dev/",
-         applicationID: "convex",
-       },
-     ],
-   };
+5. Set it on your Convex deployment (this is Convex's environment, not `.env.local`):
+   ```bash
+   npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-clerk-issuer-domain.clerk.accounts.dev/
    ```
+   `convex dev` refuses to push functions until this is set.
 
 #### 6. Start the Development Server
 ```bash
@@ -395,7 +390,26 @@ http://localhost:3000
 | `CLERK_SECRET_KEY` | Secret key for Clerk server-side middleware and authentication | [Clerk Dashboard](https://dashboard.clerk.com) > API Keys |
 | `EDGE_STORE_ACCESS_KEY` | Access key for EdgeStore public file buckets | [EdgeStore Dashboard](https://dashboard.edgestore.dev) |
 | `EDGE_STORE_SECRET_KEY` | Secret key for EdgeStore file authorization | [EdgeStore Dashboard](https://dashboard.edgestore.dev) |
-| `GOOGLE_API_KEY` | Google Gemini API key for Gemini 1.5 Flash AI Assistant | [Google AI Studio](https://aistudio.google.com/) |
+| `GOOGLE_API_KEY` | Google Gemini API key for the AI assistant | [Google AI Studio](https://aistudio.google.com/) |
+| `GEMINI_MODEL` | *Optional.* Gemini model id; defaults to `gemini-3.5-flash` | [Gemini models](https://ai.google.dev/gemini-api/docs/models) |
+| `CLERK_JWT_ISSUER_DOMAIN` | Clerk issuer URL. Set on the **Convex deployment** (not in `.env`) | Clerk Dashboard > JWT Templates > Convex > Issuer |
+
+---
+
+## 🚀 Deployment (Vercel + Convex)
+
+The Next.js build does **not** deploy the Convex backend on its own. If the two drift apart, pages call functions the backend doesn't have and crash.
+
+1. **Production Convex:** set the issuer for your *production* Clerk instance on the prod deployment:
+   ```bash
+   npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.your-domain.com/
+   ```
+2. **Vercel environment variables:** everything in the table above, with production values. Also add `CONVEX_DEPLOY_KEY` (Convex Dashboard → Settings → Deploy Keys → production). Use Clerk **production** keys (`pk_live_…` / `sk_live_…`); development keys are rate-limited.
+3. **Vercel build command** so each deploy ships the backend and frontend together:
+   ```bash
+   npx convex deploy --cmd 'npm run build'
+   ```
+4. Redeploy.
 
 ---
 

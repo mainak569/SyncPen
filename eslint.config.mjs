@@ -10,6 +10,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Build output and Convex's generated bindings aren't source; linting them
+  // buried the real problems under ~25k errors.
+  { ignores: [".next/**", "node_modules/**", "convex/_generated/**", "next-env.d.ts"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

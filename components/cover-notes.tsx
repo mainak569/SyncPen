@@ -5,11 +5,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, X } from "lucide-react";
 import { useCoverImage } from "@/hooks/use-cover-image";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { useEdgeStore } from "@/lib/edgestore";
+import { deleteUnreferencedFiles } from "@/lib/edgestore-cleanup";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CoverImageProps {
@@ -22,6 +23,7 @@ export const CoverNotes = ({ url, preview }: CoverImageProps) => {
   const params = useParams();
   const coverImage = useCoverImage();
   const removeCoverImage = useMutation(api.documents.removeCoverImage);
+  const convex = useConvex();
 
   const onRemove = async () => {
     // Drop the reference first. Deleting the file first meant an EdgeStore
@@ -31,14 +33,15 @@ export const CoverNotes = ({ url, preview }: CoverImageProps) => {
       id: params.documentId as Id<"documents">,
     });
 
+    // Best-effort, and only if no other note still shows the same file: an
+    // orphaned upload must not surface as a failed removal, and a shared one
+    // must not vanish from the note it was copied into.
     if (url) {
-      try {
-        await edgestore.publicFiles.delete({ url });
-      } catch (error) {
-        // Best-effort: the cover is already gone from the note, and an
-        // orphaned file must not surface as a failed removal.
-        console.error("Failed to delete cover image from storage:", error);
-      }
+      await deleteUnreferencedFiles(
+        edgestore.publicFiles,
+        (urls) => convex.query(api.documents.findUnreferencedFiles, { urls }),
+        [url]
+      );
     }
   };
 
