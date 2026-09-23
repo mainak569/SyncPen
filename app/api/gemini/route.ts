@@ -7,7 +7,7 @@ import { clientIpFrom, rateLimit, tooManyRequests } from "@/lib/rate-limit";
 // kept overridable so the model can move without a code change. The id is only
 // validated by Google at request time — the SDK's type falls back to a plain
 // `string`, so a typo here fails as a 404 on every chat, not at build time.
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-001";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 // This endpoint is intentionally public (the landing-page chat is available
 // before sign-up), so cap what a single request can forward...
@@ -29,11 +29,16 @@ const buildGoogleGenAIPrompt = (messages: Message[]): Message[] => [
     role: "system",
     content: initialMessage.content,
   },
-  ...messages.slice(-MAX_MESSAGES).map((message) => ({
-    id: message.id || generateId(),
-    role: message.role,
-    content: String(message.content ?? "").slice(0, MAX_CONTENT_CHARS),
-  })),
+  // Only conversation turns come from the client. A "system" message in the
+  // body would otherwise sit beside ours and could override the instructions.
+  ...messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .slice(-MAX_MESSAGES)
+    .map((message) => ({
+      id: message.id || generateId(),
+      role: message.role,
+      content: String(message.content ?? "").slice(0, MAX_CONTENT_CHARS),
+    })),
 ];
 
 export async function POST(request: Request) {

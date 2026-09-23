@@ -36,8 +36,21 @@ export const Navbar = <T extends CollectionTable>({
       </nav>
     );
   }
+  // Still render the menu button: on mobile the sidebar starts collapsed, and
+  // this bar is the only way to reopen it from a deleted or missing item.
   if (item === null) {
-    return null;
+    return (
+      <nav className="bg-transparent px-3 py-2 w-full">
+        {isCollapsed && (
+          <MenuIcon
+            role="button"
+            aria-label="Open sidebar"
+            onClick={onResetWidth}
+            className="h-6 w-6 text-muted-foreground"
+          />
+        )}
+      </nav>
+    );
   }
 
   return (
@@ -46,6 +59,7 @@ export const Navbar = <T extends CollectionTable>({
         {isCollapsed && (
           <MenuIcon
             role="button"
+            aria-label="Open sidebar"
             onClick={onResetWidth}
             className="h-6 w-6 text-muted-foreground"
           />

@@ -85,6 +85,10 @@ export const ToolbarNotes = ({ initialData, preview }: ToolbarProps) => {
           </Button>
         </div>
       )}
+      {/* Read-only copy for published pages: shown, but not a picker. */}
+      {!!initialData.icon && preview && (
+        <p className="text-6xl pt-6">{initialData.icon}</p>
+      )}
       {/* <div className="opacity-100 group-hover:opacity-100 flex items-center gap-x-1 py-4"> */}
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-4 max-[1080px]:opacity-100">
         {!initialData.icon && !preview && (

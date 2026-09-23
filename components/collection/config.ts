@@ -34,7 +34,12 @@ type CollectionApi<T extends CollectionTable> = {
     Doc<T>[]
   >;
   getTrash: FunctionReference<"query", "public", Record<string, never>, Doc<T>[]>;
-  getById: FunctionReference<"query", "public", { id: Id<T> }, Doc<T>>;
+  getById: FunctionReference<
+    "query",
+    "public",
+    { id: Id<T> },
+    Doc<T> | null
+  >;
   create: FunctionReference<
     "mutation",
     "public",
@@ -82,6 +87,11 @@ export type CollectionConfig<T extends CollectionTable = CollectionTable> = {
    * uploads; asking the boards client to do this would be a no-op at best.
    */
   cleansUpUploads: boolean;
+  /**
+   * The other collection, linked from the sidebar. Without it the only way
+   * between notes and boards was back out through the landing page.
+   */
+  sibling: { label: string; href: string; icon: LucideIcon };
   api: CollectionApi<T>;
 };
 
@@ -111,6 +121,7 @@ export const notesCollection: CollectionConfig<"documents"> = {
   listIcon: FileIcon,
   hasIcon: true,
   cleansUpUploads: true,
+  sibling: { label: "Boards", href: "/boards", icon: Presentation },
   api: api.documents,
 };
 
@@ -124,5 +135,6 @@ export const boardsCollection: CollectionConfig<"boards"> = {
   listIcon: Presentation,
   hasIcon: false,
   cleansUpUploads: false,
+  sibling: { label: "Notes", href: "/documents", icon: FileIcon },
   api: api.boards,
 };

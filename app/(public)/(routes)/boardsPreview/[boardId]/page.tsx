@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import dynamic from "next/dynamic";
+import { ItemNotFound } from "@/components/item-not-found";
 
 interface BoardIdPageProps {
   params: Promise<{
@@ -41,7 +42,7 @@ const BoardIdPage = ({ params }: BoardIdPageProps) => {
   }
 
   if (board === null) {
-    return <div className="p-12">Not found</div>;
+    return <ItemNotFound noun="board" backHref="/" backLabel="Go to SyncPen" isPublicLink />;
   }
 
   return (

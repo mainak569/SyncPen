@@ -70,23 +70,25 @@ export default function ChatBox() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 50 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed bottom-6 right-6 z-500"
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-500"
           >
             <div
               className={cn(
-                "rounded-full size-16 p-3 shadow-xl text-white transition-all",
-                "opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                "rounded-full size-12 md:size-14 p-3 shadow-xl text-white transition-all",
+                "opacity-90 hover:opacity-100 dark:bg-blue-500 dark:hover:bg-blue-600"
               )}
             >
               <Button
                 ref={chatIconRef}
                 onClick={() => setIsChatOpen(!isChatOpen)}
+                aria-label={isChatOpen ? "Close AI chat" : "Open AI chat"}
+                aria-expanded={isChatOpen}
                 size="icon"
               >
                 {isChatOpen ? (
-                  <MessagesSquare className="size-10 animate-pulse" />
+                  <MessagesSquare className="size-6 md:size-7 animate-pulse" />
                 ) : (
-                  <MessageSquareText className="size-10" />
+                  <MessageSquareText className="size-6 md:size-7" />
                 )}
               </Button>
             </div>
@@ -101,7 +103,7 @@ export default function ChatBox() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-20 right-4 z-500 w-[95%] md:w-[500px]"
+            className="fixed bottom-20 md:bottom-24 inset-x-4 md:inset-x-auto md:right-6 z-500 md:w-[500px]"
           >
             <Card className="border-2">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -110,6 +112,7 @@ export default function ChatBox() {
                 </CardTitle>
                 <Button
                   onClick={() => setIsChatOpen(false)}
+                  aria-label="Close chat"
                   size="sm"
                   variant="ghost"
                 >
@@ -117,7 +120,7 @@ export default function ChatBox() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[300px] pr-4 overflow-auto">
+                <ScrollArea className="h-[300px] max-h-[45dvh] pr-4 overflow-auto">
                   {!messages.length && (
                     <div className="w-full mt-32 text-gray-500 flex justify-center">
                       No message yet.
@@ -214,6 +217,7 @@ export default function ChatBox() {
                   />
                   <Button
                     type="submit"
+                    aria-label="Send message"
                     className="size-9"
                     disabled={isLoading}
                     size="icon"

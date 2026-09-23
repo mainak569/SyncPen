@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef } from "react";
 import ChatBox from "./_components/chatBox";
 import { useEdgeStore } from "@/lib/edgestore";
 import { useOrphanedUploads } from "@/hooks/use-orphaned-uploads";
+import { ItemNotFound } from "@/components/item-not-found";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -65,15 +66,22 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   //////////////////////////////////////////////////////////////
 
   const extractedText = useMemo(() => {
-    if (!document?.content) return "";
+    if (!document) return "";
+
+    // The title is part of the page as the user sees it; without it the
+    // assistant cannot answer "what is this note about?" for a note whose
+    // body is only images, or name the note it is summarising.
+    const heading = `Title: ${document.title}`;
+
+    if (!document.content) return heading;
     try {
       const parsedContent = parseDocumentContent(document.content);
-      return extractTextFromDocument(parsedContent);
+      return `${heading}\n\n${extractTextFromDocument(parsedContent)}`;
     } catch (error) {
       console.error("Error extracting document text:", error);
-      return "";
+      return heading;
     }
-  }, [document?.content]);
+  }, [document]);
 
   //////////////////////////////////////////////////////////////
 
@@ -94,7 +102,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   }
 
   if (document === null) {
-    return <div>Not found</div>;
+    return <ItemNotFound noun="note" backHref="/documents" backLabel="Back to notes" />;
   }
 
   return (

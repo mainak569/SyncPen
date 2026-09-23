@@ -10,7 +10,7 @@ const font = Poppins({
 
 const Logo = () => {
   return (
-    <div className="hidden md:flex items-center gap-x-2">
+    <div className="flex shrink-0 items-center gap-x-2">
       <Image
         src="/logo.png"
         height="40"
@@ -25,7 +25,8 @@ const Logo = () => {
         alt="Logo"
         className="hidden dark:block"
       />
-      <p className={cn("font-semibold", font.className)}>
+      {/* The mark alone on phones, where the navbar has no room for both. */}
+      <p className={cn("hidden sm:block font-semibold", font.className)}>
         Sync
         <br />
         Pen

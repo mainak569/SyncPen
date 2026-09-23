@@ -317,26 +317,25 @@ export const getById = query({
   // `id` rather than `documentId`, to match boards.getById — see getSidebar.
   args: { id: v.id("documents") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
     const document = await ctx.db.get(args.id);
 
+    // Anything the caller may not see comes back as null rather than an
+    // error. Throwing sent every dead link — a deleted note, an unpublished
+    // share URL — to the crash screen, and the pages' "not found" branches
+    // could never run. Returning the same null for "missing" and "private"
+    // also avoids telling a stranger which ids exist.
     if (!document) {
-      throw new Error("Not found");
+      return null;
     }
 
     if (document.isPublished && !document.isArchived) {
       return document;
     }
 
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    const identity = await ctx.auth.getUserIdentity();
 
-    const userId = identity.subject;
-
-    if (document.userId !== userId) {
-      throw new Error("Unauthorized");
+    if (!identity || document.userId !== identity.subject) {
+      return null;
     }
 
     return document;

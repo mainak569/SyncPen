@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import { ItemNotFound } from "@/components/item-not-found";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -48,7 +49,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   }
 
   if (document === null) {
-    return <div>Not found</div>;
+    return <ItemNotFound noun="note" backHref="/" backLabel="Go to SyncPen" isPublicLink />;
   }
 
   return (

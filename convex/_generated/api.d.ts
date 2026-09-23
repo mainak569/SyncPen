@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as boards from "../boards.js";
 import type * as documents from "../documents.js";
+import type * as model_auth from "../model/auth.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -27,6 +28,7 @@ import type * as documents from "../documents.js";
 declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   documents: typeof documents;
+  "model/auth": typeof model_auth;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -176,6 +176,7 @@ const Navigation = <T extends CollectionTable>({
         <div
           onClick={collapse}
           role="button"
+          aria-label="Collapse sidebar"
           className={cn(
             "h-6 w-6 text-muted-foreground rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 absolute top-3 right-2 transition",
             isMobile
@@ -189,6 +190,12 @@ const Navigation = <T extends CollectionTable>({
           <UserItem />
           <Link href="/">
             <SidebarItem label="Home" icon={Home} />
+          </Link>
+          <Link href={config.sibling.href}>
+            <SidebarItem
+              label={config.sibling.label}
+              icon={config.sibling.icon}
+            />
           </Link>
           <AppearanceToggler />
           <SidebarItem
@@ -237,7 +244,10 @@ const Navigation = <T extends CollectionTable>({
         ref={navbarRef}
         className={cn(
           "absolute top-0 z-[99999] transition-all ease-in-out duration-300",
-          isMobile ? "w-0 left-0" : "left-60 w-[calc(100%-240px)]"
+          isMobile ? "w-0 left-0" : "left-60 w-[calc(100%-240px)]",
+          // The full-screen mobile sidebar covers the page; without this the
+          // navbar slides across its header on the way out.
+          isMobile && !isCollapsed && "invisible"
         )}
       >
         {!!params[config.routeParam] ? (
@@ -251,6 +261,7 @@ const Navigation = <T extends CollectionTable>({
             {isCollapsed && (
               <MenuIcon
                 role="button"
+                aria-label="Open sidebar"
                 onClick={resetWidth}
                 className="h-6 w-6 text-muted-foreground"
               />

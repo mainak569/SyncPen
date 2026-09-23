@@ -35,7 +35,7 @@ const parseInitialContent = (
 };
 
 const EditorNotes = ({ onChange, initialContent, editable }: EditorProps) => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { edgestore } = useEdgeStore();
 
   // Read-only previews must never write back: the viewer of a published note
@@ -91,7 +91,7 @@ const EditorNotes = ({ onChange, initialContent, editable }: EditorProps) => {
         editor={editor}
         editable={isEditable}
         onChange={handleChange}
-        theme={theme === "dark" ? "dark" : "light"}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
       />
     </div>
   );

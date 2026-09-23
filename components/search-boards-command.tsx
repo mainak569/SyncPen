@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/clerk-react";
 
+import { defaultFilter } from "cmdk";
 import {
   CommandDialog,
   CommandEmpty,
@@ -44,8 +45,7 @@ const SearchCommand = () => {
     return () => document.removeEventListener("keydown", down);
   }, [toggle]);
 
-  const onSelect = (value: string) => {
-    const id = value.split("-")[0];
+  const onSelect = (id: string) => {
     router.push(`/boards/${id}`);
     onClose();
   };
@@ -55,15 +55,28 @@ const SearchCommand = () => {
   }
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={onClose}>
+    <CommandDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      // Match on the title alone. The item value has to be the id so that
+      // notes sharing a title stay distinct, but the default filter
+      // fuzzy-matches the value too, so "child" used to hit every note whose
+      // random id happened to contain those letters in order.
+      filter={(_value, search, keywords) =>
+        defaultFilter(keywords?.join(" ") ?? "", search)
+      }
+    >
       <CommandInput placeholder={`Search ${user?.fullName}'s SyncPen...`} />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Boards">
           {boards?.map((document) => (
             <CommandItem
-              key={document._id}
-              value={`${document._id}-${document.title}`}
+              // cmdk reads `keywords` only on mount, so remount on rename or
+              // a title changed from another tab would search the old name.
+              key={`${document._id}-${document.title}`}
+              value={document._id}
+              keywords={[document.title]}
               title={document.title}
               onSelect={onSelect}
             >

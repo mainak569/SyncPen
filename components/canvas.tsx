@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useTheme } from "next-themes";
@@ -23,22 +23,33 @@ const Canvas: React.FC<CanvasProps> = ({
   onSaveContent,
   editable = true,
 }) => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
 
-  const parseInitialElements = useCallback(() => {
+  // Parsed once: Excalidraw only reads initialData on mount, and re-parsing a
+  // large board on every render is wasted work.
+  const initialScene = useMemo(() => {
     try {
       const parsedContent = initialContent ? JSON.parse(initialContent) : {};
-      if (Array.isArray(parsedContent.elements)) {
-        return parsedContent.elements; // Return valid elements
-      }
-      // console.error("Invalid initialContent format:", parsedContent);
-      return []; // Fallback to an empty array
+      const saved = parsedContent.appState ?? {};
+
+      return {
+        elements: Array.isArray(parsedContent.elements)
+          ? parsedContent.elements
+          : [],
+        // The viewport is saved on every change; restore it so a board reopens
+        // where it was left instead of snapping back to the origin.
+        viewport: {
+          ...(typeof saved.scrollX === "number" && { scrollX: saved.scrollX }),
+          ...(typeof saved.scrollY === "number" && { scrollY: saved.scrollY }),
+          ...(typeof saved.zoom?.value === "number" && { zoom: saved.zoom }),
+        },
+      };
     } catch (error) {
       console.error("Error parsing initialContent:", error);
-      return []; // Fallback to an empty array
+      return { elements: [], viewport: {} };
     }
   }, [initialContent]);
 
@@ -87,13 +98,17 @@ const Canvas: React.FC<CanvasProps> = ({
       <Excalidraw
         excalidrawAPI={(api) => setExcalidrawAPI(api)}
         initialData={{
-          elements: parseInitialElements(),
+          elements: initialScene.elements,
           appState: {
-            theme: theme === "dark" ? "dark" : "light",
+            ...initialScene.viewport,
+            theme: resolvedTheme === "dark" ? "dark" : "light",
           },
         }}
         onChange={handleChange}
-        theme={theme === "dark" ? "dark" : "light"}
+        // Published boards are read-only: hide the drawing tools rather than
+        // letting a visitor draw strokes that silently never save.
+        viewModeEnabled={!editable}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
         UIOptions={{
           tools: {
             image: false,

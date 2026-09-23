@@ -10,7 +10,7 @@ const uniqueId = () =>
 // kept overridable so the model can move without a code change. The id is only
 // validated by Google at request time — the SDK's type falls back to a plain
 // `string`, so a typo here fails as a 404 on every chat, not at build time.
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-001";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 // Cap what we forward so a single request cannot run up an unbounded bill.
 const MAX_MESSAGES = 40;
@@ -80,7 +80,13 @@ export async function POST(request: Request) {
       `,
     };
 
+    // Only conversation turns come from the client. A "system" message in the
+    // body would otherwise sit beside ours and could override the instructions.
     const history: Message[] = body.messages
+      .filter(
+        (message: Message) =>
+          message.role === "user" || message.role === "assistant"
+      )
       .slice(-MAX_MESSAGES)
       .map((message: Message) => ({
         id: message.id || uniqueId(),
