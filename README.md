@@ -86,10 +86,11 @@
 - **Page-Aware In-Document Assistant (`/documents/[documentId]`)**:
   - Automatically traverses and parses the BlockNote abstract syntax tree (AST) via `extractTextFromDocument`.
   - Extracts text from paragraphs, headers, tables, and nested blocks.
-  - Injects live page content into Google Gemini 3.5 Flash via Edge API routes, allowing users to ask questions, request summaries, extract action items, or generate new sections based specifically on their current document.
+  - Injects live page content into Google Gemini 3.5 Flash via an Edge API route (`/api/documents/[documentId]/gemini`), allowing users to ask questions, request summaries, extract action items, or generate new sections based specifically on their current document.
 - **Landing Page Support Assistant**:
   - Interactive chatbot on the marketing landing page built with Vercel AI SDK (`useChat` & `streamText`).
   - Streams real-time answers to user questions about SyncPen's features, capabilities, and productivity workflows.
+- **Rate Limiting**: Both AI routes are throttled by a lightweight in-memory limiter (`lib/rate-limit.ts`): 20 requests/minute per signed-in user for the document assistant, 10 requests/minute per IP for the landing page assistant. Limits are per server instance (best-effort), not a global count.
 
 ### 4. ⚡ Real-Time Reactive Backend (Convex)
 - **Live Reactive Subscriptions**: Convex replaces traditional REST/GraphQL polling with persistent real-time WebSocket subscriptions (`useQuery`, `useMutation`).
@@ -107,7 +108,7 @@
 ### 6. ☁️ Media & Asset Storage (EdgeStore)
 - Fast, secure file uploading for document covers and embedded note assets via `@edgestore/server` and `@edgestore/react`.
 - Integrated with Next.js image optimization (`next.config.ts` remote patterns for `files.edgestore.dev`).
-- Automatic lifecycle management and cleanup before deletion.
+- **Orphaned File Cleanup**: Deleting a note removes its cover and embedded uploads from EdgeStore, and removing an image from a note you keep deletes that file too (`lib/uploads.ts`, `lib/edgestore-cleanup.ts`, `hooks/use-orphaned-uploads.ts`). Files still referenced by another note are left alone.
 
 ### 7. 🌲 Polished UI/UX & Modern Design
 - **Command Palette (`Cmd+K` / `Ctrl+K`)**: Rapid global search modal (`cmdk`) to jump to any note or whiteboard instantaneously.
@@ -146,7 +147,7 @@ graph TD
 
     subgraph AI["AI Layer (Vercel AI SDK + Google)"]
         GeminiRoute["Edge API (/api/gemini)"]
-        GeminiDocRoute["Doc Context API (/documents/[id]/api/gemini)"]
+        GeminiDocRoute["Doc Context API (/api/documents/[id]/gemini)"]
         GeminiLLM["Google Gemini 3.5 Flash"]
     end
 
@@ -181,7 +182,7 @@ graph TD
 | **Rich Text Editor** | [BlockNote](https://www.blocknotejs.org/) | `0.26.0` | Notion-like block-based WYSIWYG editor with formatting toolbars |
 | **Infinite Canvas** | [Excalidraw](https://excalidraw.com/) | `0.18.0` | Virtual whiteboard with vector shapes, freehand drawing, and diagramming |
 | **Real-Time Backend** | [Convex](https://www.convex.dev/) | `1.20.0` | Serverless reactive database, WebSocket subscriptions, and transactions |
-| **Authentication** | [Clerk](https://clerk.com/) | `6.12.5` | User authentication, identity management, and JWT session handling |
+| **Authentication** | [Clerk](https://clerk.com/) | `6.39` | User authentication, identity management, and JWT session handling |
 | **AI Integration** | [Vercel AI SDK](https://sdk.vercel.ai/) | `4.2.10` | Stream handling, conversation state management (`useChat`, `streamText`) |
 | **LLM Provider** | [Google Gemini](https://ai.google.dev/) | `@ai-sdk/google 1.2` | Contextual question answering, document summarization (`gemini-3.5-flash`, overridable via `GEMINI_MODEL`) |
 | **File Storage** | [EdgeStore](https://edgestore.dev/) | `0.3.3` | Optimized cloud storage bucket for cover images and document attachments |
@@ -247,17 +248,14 @@ SyncPen-main/
 ├── app/                                        # Next.js 15 App Router
 │   ├── (main)/                                 # Authenticated workspace application
 │   │   ├── (boards)/                           # Excalidraw Whiteboards
-│   │   │   ├── _components/                    # Navigation, toolbar, menu, trash-box
 │   │   │   ├── boards/                         # Board routes
 │   │   │   │   ├── [boardId]/page.tsx          # Interactive Excalidraw board canvas
 │   │   │   │   └── page.tsx                    # Board dashboard empty state
 │   │   │   └── layout.tsx                      # Boards layout wrapper
 │   │   └── (notes)/                            # Notion-Style Document Notes
-│   │       ├── _components/                    # Note navigation, item list, trash-box, banner
 │   │       ├── documents/                      # Document routes
 │   │       │   ├── [documentId]/               # Active document view
 │   │       │   │   ├── _components/            # Page-aware in-document chatBox
-│   │       │   │   ├── api/gemini/route.ts     # Document-aware Gemini endpoint
 │   │       │   │   └── page.tsx                # BlockNote editor page with AST text parser
 │   │       │   └── page.tsx                    # Notes welcome / create note page
 │   │       └── layout.tsx                      # Notes layout wrapper
@@ -269,13 +267,16 @@ SyncPen-main/
 │   │   └── (routes)/
 │   │       ├── boardsPreview/[boardId]/        # Read-only public board viewer
 │   │       └── notesPreview/[documentId]/      # Read-only public note viewer
-│   ├── api/                                    # Global API routes
+│   ├── api/                                    # API routes
+│   │   ├── documents/[documentId]/gemini/route.ts  # Document-aware Gemini endpoint
 │   │   ├── edgestore/[...edgestore]/route.ts   # EdgeStore file upload handler
 │   │   └── gemini/route.ts                     # Landing page AI assistant streaming endpoint
 │   ├── error.tsx                               # Global error boundary
+│   ├── not-found.tsx                           # 404 page
 │   ├── globals.css                             # Tailwind CSS v4 design tokens
 │   └── layout.tsx                              # Root layout & providers
 ├── components/                                 # Reusable UI & Core Components
+│   ├── collection/                             # Shared notes/boards sidebar, item rows, navbar, title, publish, trash-box
 │   ├── modals/                                 # Confirm modal, settings, cover-image dialog
 │   ├── providers/                              # Convex, Clerk, Theme, and Modal providers
 │   ├── ui/                                     # ShadCN UI & 3D Card primitives
@@ -292,11 +293,13 @@ SyncPen-main/
 ├── convex/                                     # Convex Real-Time Backend
 │   ├── _generated/                             # Convex generated server & data types
 │   ├── auth.config.ts                          # Clerk JWT provider configuration
+│   ├── model/auth.ts                           # Shared sign-in & ownership guards
 │   ├── boards.ts                               # Board queries, mutations, recursive archive
 │   ├── documents.ts                            # Document queries, mutations, recursive archive
 │   └── schema.ts                               # Database schema definitions & compound indexes
 ├── hooks/                                      # Custom React Hooks
 │   ├── use-cover-image.tsx                     # Zustand modal store for cover upload
+│   ├── use-orphaned-uploads.ts                 # Deletes files removed from a note's content
 │   ├── use-origin.tsx                          # Safe SSR window origin resolution
 │   ├── use-scroll-top.tsx                      # Window scroll listener hook
 │   ├── use-search.tsx                          # Zustand search modal state
@@ -304,6 +307,9 @@ SyncPen-main/
 ├── lib/                                        # Utilities & Configs
 │   ├── chatDataHome.ts                         # System prompt & initial AI assistant knowledge
 │   ├── edgestore.ts                            # EdgeStore client provider
+│   ├── edgestore-cleanup.ts                    # Best-effort deletion of a note's uploaded files
+│   ├── rate-limit.ts                           # In-memory rate limiter for the AI routes
+│   ├── uploads.ts                              # Extracts uploaded file URLs from note content
 │   └── utils.ts                                # cn (clsx + tailwind-merge) utility
 ├── public/                                     # Static illustrations, logos, SVG badges
 ├── middleware.ts                               # Clerk route matcher & auth middleware
@@ -318,7 +324,7 @@ SyncPen-main/
 
 ### Prerequisites
 Before running SyncPen locally, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (`v18.17` or later, `v20+` recommended)
+- [Node.js](https://nodejs.org/) (`v18.18` or later, `v20+` recommended)
 - [npm](https://www.npmjs.com/) (or `pnpm` / `yarn`)
 - Accounts on:
   - [Convex](https://dashboard.convex.dev) (Real-time backend)
@@ -404,7 +410,7 @@ The Next.js build does **not** deploy the Convex backend on its own. If the two 
    ```bash
    npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.your-domain.com/
    ```
-2. **Vercel environment variables:** everything in the table above, with production values. Also add `CONVEX_DEPLOY_KEY` (Convex Dashboard → Settings → Deploy Keys → production). Use Clerk **production** keys (`pk_live_…` / `sk_live_…`); development keys are rate-limited.
+2. **Vercel environment variables:** everything in the table above, with production values. Also add `CONVEX_DEPLOY_KEY` (Convex Dashboard → Settings → Deploy Keys → production) and scope it to the **Production** environment only. If Preview builds get the production key, `convex deploy` refuses to run and every preview fails; for working previews, add a separate *preview* deploy key scoped to Preview. Keep it out of Development too, so `vercel env pull` doesn't copy a production credential into your local `.env.local`. Use Clerk **production** keys (`pk_live_…` / `sk_live_…`); development keys are rate-limited.
 3. **Vercel build command** so each deploy ships the backend and frontend together:
    ```bash
    npx convex deploy --cmd 'npm run build'
